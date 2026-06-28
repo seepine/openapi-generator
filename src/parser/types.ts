@@ -1,0 +1,28 @@
+import type { JsonSchema } from '../types'
+
+export type TsType =
+  | {
+      kind: 'primitive'
+      value: 'string' | 'number' | 'boolean' | 'null' | 'unknown' | 'never'
+    }
+  | { kind: 'literal'; value: string | number | boolean | null }
+  | { kind: 'union'; types: TsType[] }
+  | { kind: 'array'; item: TsType }
+  | { kind: 'object'; properties: TsProperty[] }
+  | { kind: 'ref'; name: string }
+  | { kind: 'literalUnion'; literals: (string | number)[] }
+
+export interface TsProperty {
+  name: string
+  type: TsType
+  optional: boolean
+  description?: string
+}
+
+export interface ParserContext {
+  schemas: Record<string, JsonSchema>
+  /** Track refs currently being resolved to break cycles. */
+  refStack: Set<string>
+  /** Max depth, default 30. */
+  depth: number
+}

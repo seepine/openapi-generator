@@ -1,0 +1,49 @@
+# 配置
+#   密钥 NPM_TOKEN
+
+name: Publish
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          cache: true
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Tsc
+        run: pnpm tsc
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Authenticate with Registry
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ./.npmrc
+          echo "git-checks=false" >> ./.npmrc
+          npm whoami
+
+      - name: Publish to npm
+        run: npm publish

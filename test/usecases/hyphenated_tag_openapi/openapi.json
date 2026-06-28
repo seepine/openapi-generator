@@ -1,0 +1,60 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Hyphenated Tag API",
+    "description": "Tags with hyphens / snake_case / PascalCase to exercise identifier normalization",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/admin/config": {
+      "get": {
+        "summary": "Get admin config",
+        "operationId": "getConfig",
+        "tags": ["admin-config"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "value": { "type": "string" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/billing/v2/report": {
+      "get": {
+        "summary": "Billing report v2",
+        "operationId": "report",
+        "tags": ["billing-v2"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": { "schema": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "/legacy/snake": {
+      "get": {
+        "summary": "Snake_case tag",
+        "operationId": "ping",
+        "tags": ["snake_case_tag"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": { "schema": { "type": "string" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

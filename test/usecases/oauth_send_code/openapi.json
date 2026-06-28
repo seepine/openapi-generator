@@ -1,0 +1,89 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OAuth Send Code",
+    "version": "1.0.0",
+    "description": "Covers oneOf with const string discriminator (channel=email|phone), optional uniqueId, format/pattern on email, and security: HTTP Bearer."
+  },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "tags": [
+    {
+      "name": "auth"
+    }
+  ],
+  "security": [
+    {
+      "HTTP Bearer": []
+    }
+  ],
+  "paths": {
+    "/oauth/send/code": {
+      "post": {
+        "tags": ["auth"],
+        "security": [
+          {
+            "HTTP Bearer": []
+          }
+        ],
+        "operationId": "sendCode",
+        "summary": "Send verification code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "channel": {
+                        "type": "string",
+                        "const": "email"
+                      },
+                      "email": {
+                        "type": "string",
+                        "format": "email",
+                        "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                      },
+                      "uniqueId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["channel", "email"]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "channel": {
+                        "type": "string",
+                        "const": "phone"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "uniqueId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["channel", "phone"]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    }
+  }
+}
