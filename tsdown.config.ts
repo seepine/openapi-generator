@@ -6,8 +6,8 @@ export default defineConfig({
   platform: 'node',
   exports: true,
   dts: true,
-  minify: true,
-  sourcemap: true,
-  unbundle: false,
+  minify: false,
+  sourcemap: false,
+  unbundle: true,
   treeshake: true,
 })
