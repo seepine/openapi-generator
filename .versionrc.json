@@ -9,9 +9,9 @@
     { "type": "style", "hidden": true },
     { "type": "test", "hidden": true }
   ],
-  "commitUrlFormat": "{{owner}}/{{repository}}/commit/{{hash}}",
-  "compareUrlFormat": "{{owner}}/{{repository}}/compare/{{previousTag}}...{{currentTag}}",
-  "issueUrlFormat": "{{owner}}/{{repository}}/issues/{{id}}",
+  "commitUrlFormat": "/{{owner}}/{{repository}}/commit/{{hash}}",
+  "compareUrlFormat": "/{{owner}}/{{repository}}/compare/{{previousTag}}...{{currentTag}}",
+  "issueUrlFormat": "/{{owner}}/{{repository}}/issues/{{id}}",
   "userUrlFormat": "/{{user}}",
   "releaseCommitMessageFormat": "chore(release): v{{currentTag}}"
 }

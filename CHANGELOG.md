@@ -7,4 +7,4 @@ All notable changes to this project will be documented in this file. See [commit
 
 ### 🎉 Features
 
-* first commit ([efb8bb6](seepine/openapi-generator/commit/efb8bb6f8d652e9e4157530ab272a739611d8d9d))
+* first commit ([efb8bb6](/seepine/openapi-generator/commit/efb8bb6f8d652e9e4157530ab272a739611d8d9d))
