@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.3](/seepine/openapi-generator/compare/v0.1.2...v0.1.3) (2026-06-29)
+
+
+### 🎉 Features
+
+* **parser:** map binary format string schema to Blob type ([f83cfe6](/seepine/openapi-generator/commit/f83cfe66931e1941777c3906bf8132d809e1936f))
+
 ## [0.1.2](/seepine/openapi-generator/compare/v0.1.1...v0.1.2) (2026-06-29)
 
 
