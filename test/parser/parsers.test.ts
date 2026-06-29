@@ -279,20 +279,54 @@ describe('parser — nullable / type-array', () => {
 })
 
 describe('parser — fallback / unknown', () => {
-  it('20. format is a validation hint — string format stays string', () => {
+  it('20. format is a validation hint — non-binary string format stays string', () => {
     expect(parse(schema({ type: 'string', format: 'date-time' }))).toBe(
       'string',
     )
     expect(parse(schema({ type: 'string', format: 'email' }))).toBe('string')
-    expect(parse(schema({ type: 'string', format: 'binary' }))).toBe('string')
     expect(parse(schema({ type: 'string', format: 'cuid' }))).toBe('string')
   })
 
-  it('20b. unknown shape → unknown', () => {
+  it('20b. format: binary on string → Blob', () => {
+    // OpenAPI: `type: string, format: binary` is the canonical shape for
+    // file / blob payloads. The generator surfaces that as the DOM global
+    // `Blob`, which most consumers either pass through alova or post-
+    // process into a File / ArrayBuffer.
+    expect(parse(schema({ type: 'string', format: 'binary' }))).toBe('Blob')
+  })
+
+  it('20b2. contentEncoding: binary on string → Blob', () => {
+    // JSON-Schema spelling of the same intent (no `format` field).
+    expect(
+      parse(
+        schema({
+          type: 'string',
+          contentEncoding: 'binary',
+        }),
+      ),
+    ).toBe('Blob')
+  })
+
+  it('20b3. format: binary + nullable: true → Blob | null', () => {
+    expect(
+      parse(schema({ type: 'string', format: 'binary', nullable: true })),
+    ).toBe('Blob | null')
+  })
+
+  it('20b4. format: binary on a non-string type → Blob', () => {
+    // binary is a type-system override, not a per-`type` decoration: when the
+    // schema carries `format: 'binary'` we collapse to Blob regardless of
+    // the declared `type`. A number with the same hint is almost certainly a
+    // mistyped doc, but falling back to Blob matches the binary intent and
+    // never silently widens to unknown.
+    expect(parse(schema({ type: 'number', format: 'binary' }))).toBe('Blob')
+  })
+
+  it('20c. unknown shape → unknown', () => {
     expect(parse(undefined)).toBe('unknown')
   })
 
-  it('20c. empty schema {} → unknown (forwarded as object with no props)', () => {
+  it('20d. empty schema {} → unknown (forwarded as object with no props)', () => {
     // empty schema → forward sees no const/enum/oneOf/anyOf/allOf/type → 'unknown'
     expect(parse(schema({}))).toBe('unknown')
   })
@@ -497,6 +531,10 @@ describe('parser — dispatch priority', () => {
     expect(parse(schema({ type: 'string', const: 'x', format: 'email' }))).toBe(
       "'x'",
     )
+    // binary format is a load-bearing exception (see parser — primitives)
+    expect(
+      parse(schema({ type: 'string', const: 'x', format: 'binary' })),
+    ).toBe("'x'")
   })
 })
 

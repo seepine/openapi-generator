@@ -52,7 +52,21 @@
           }
         ],
         "requestBody": {
-          "$ref": "#/components/requestBodies/Pet"
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

@@ -4,12 +4,14 @@ import { runGenerate } from '../../_helper'
 const FIXTURE = `${__dirname}`
 
 describe('file_upload_openapi', () => {
-  it('generates files (binary format stays as string, not unknown)', async () => {
+  it('formats the binary upload field as Blob (not string / unknown)', async () => {
     const { globals } = await runGenerate(FIXTURE)
     expect(globals).toBeTruthy()
-    // `format: binary` is a validation hint — TS has no native binary type,
-    // so it stays as `string` rather than collapsing to `unknown`.
-    // The generator is type-only and does not enforce serialization.
+    // The schema declares `type: 'string', format: 'binary'`. The
+    // generator surfaces that as the DOM global `Blob` so consumers see
+    // a real binary-payload type instead of a stringly-typed hack.
+    expect(globals).toContain('file: Blob')
+    expect(globals).not.toMatch(/file\?:\s*string/)
     expect(globals).not.toMatch(/file\?:\s*unknown/)
   })
 })

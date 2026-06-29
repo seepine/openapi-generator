@@ -3,7 +3,8 @@ import type { JsonSchema } from '../types'
 export type TsType =
   | {
       kind: 'primitive'
-      value: 'string' | 'number' | 'boolean' | 'null' | 'unknown' | 'never'
+      value:
+        'string' | 'number' | 'boolean' | 'null' | 'unknown' | 'never' | 'Blob'
     }
   | { kind: 'literal'; value: string | number | boolean | null }
   | { kind: 'union'; types: TsType[] }

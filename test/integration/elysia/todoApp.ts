@@ -11,6 +11,8 @@
  * 覆盖 openapi-generator 在典型 web 后端能遇到的几种形态：
  *   - 基础 CRUD：path / query / body / response、嵌套对象、数组
  *   - nullable、optional、partial
+ *   - 二进制上传：`z.file()` 在 OpenAPI 描述里展开为 `type: string, format: binary`，
+ *     生成器把它映射成 TS 的 `Blob`，而不是 `string`
  *   - 与 test/usecases/const_discriminator_openapi 对齐的 4 种场景：
  *       1. oneOf + const string discriminator (channel='email' | 'phone')
  *       2. anyOf + const 多分支 (grant_type='password' | 'authorization_code' | 'refresh_token')
@@ -120,6 +122,13 @@ const PatchTodoResponse = z
     priority: Priority.optional(),
   })
   .partial()
+
+// zod 4 的 z.file() 映射到 OpenAPI 的 `type: string, format: binary`，
+// generator 应该把它读作 TS 的 Blob。
+const UploadAttachmentBody = z.object({
+  filename: z.string().min(1),
+  file: z.file(),
+})
 
 // ---- app ----------------------------------------------------------------
 
@@ -240,6 +249,53 @@ export const todoApp = new Elysia({ name: 'todo-app' })
       detail: {
         summary: 'Toggle integration',
         description: 'oneOf + boolean const enabled discriminator',
+      },
+    },
+  )
+  // ---- binary upload (z.file → format=binary → Blob) ---------------------
+  .post(
+    '/todos/:id/attachment',
+    ({ params, body }) => {
+      const { id } = ParamsId.parse(params)
+      const data = UploadAttachmentBody.parse(body)
+      return {
+        id: Number(id),
+        filename: data.filename,
+        size: data.file.size,
+      }
+    },
+    {
+      parse: 'multipart/form-data',
+      params: ParamsId,
+      body: UploadAttachmentBody,
+      response: z.object({
+        id: z.number(),
+        filename: z.string(),
+        size: z.number(),
+      }),
+      detail: {
+        summary: 'Upload a binary attachment to a todo',
+        description: 'z.file() → OpenAPI format=binary → TS Blob',
+      },
+    },
+  )
+  // ---- binary download (Blob response) ----------------------------------
+  .get(
+    '/todos/:id/attachment',
+    ({ params }) => {
+      const { id } = ParamsId.parse(params)
+      // elysia forces content-type to application/octet-stream when the
+      // response is z.file(); the handler returns a `File` to satisfy it.
+      return new File([`todo-${id}`], `todo-${id}.txt`, {
+        type: 'text/plain',
+      })
+    },
+    {
+      params: ParamsId,
+      response: z.file(),
+      detail: {
+        summary: 'Download the binary attachment for a todo',
+        description: 'Blob response → OpenAPI format=binary → TS Blob',
       },
     },
   )

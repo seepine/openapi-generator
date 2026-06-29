@@ -71,6 +71,35 @@ const SAMPLE_OPENAPI = {
   },
 }
 
+// Minimal spec exercising the binary-format → Blob mapping: one route, one
+// required field, no auth, no responses payload to assert against.
+const BINARY_UPLOAD_SPEC = {
+  openapi: '3.1.0',
+  info: { title: 'B', version: '1' },
+  paths: {
+    '/upload': {
+      post: {
+        operationId: 'upload',
+        tags: ['files'],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  file: { type: 'string', format: 'binary' },
+                },
+                required: ['file'],
+              },
+            },
+          },
+        },
+        responses: { '200': {} },
+      },
+    },
+  },
+}
+
 async function writeSample(
   filename = 'openapi.json',
   patch: Record<string, unknown> = {},
@@ -292,6 +321,15 @@ describe('generate', () => {
     await generate({ input: p, outputDir: tmp })
     const content = await fs.readFile(join(tmp, 'apiDefinitions.ts'), 'utf-8')
     expect(content).toContain("  'auth.login': ['POST', '/login']")
+  })
+
+  it('formats string+format=binary as Blob in request body', async () => {
+    const p = join(inputDir, 'binary.json')
+    await fs.writeFile(p, JSON.stringify(BINARY_UPLOAD_SPEC), 'utf-8')
+    await generate({ input: p, outputDir: tmp })
+    const globals = await fs.readFile(join(tmp, 'globals.d.ts'), 'utf-8')
+    expect(globals).toContain('file: Blob')
+    expect(globals).not.toMatch(/file:\s*string/)
   })
 
   describe('input as URL', () => {
