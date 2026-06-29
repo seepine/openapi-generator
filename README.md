@@ -1,6 +1,7 @@
 # openapi-generator
 
 [![npm version][npm-version-src]][npm-version-href]
+[![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![License][license-src]][license-href]
 
 将 OpenAPI 文档，生成适用于 alova 拥有完整的类型提示的 TypeScript 代码
@@ -112,5 +113,7 @@ MIT © [seepine](https://github.com/seepine)
 
 [npm-version-src]: https://img.shields.io/npm/v/@seepine/openapi-generator
 [npm-version-href]: https://www.npmjs.com/package/@seepine/openapi-generator
+[npm-downloads-src]: https://img.shields.io/npm/dm/@seepine/openapi-generator
+[npm-downloads-href]: https://npmjs.com/package/@seepine/openapi-generator
 [license-src]: https://img.shields.io/github/license/seepine/openapi-generator.svg
 [license-href]: https://github.com/seepine/openapi-generator/blob/main/LICENSE
