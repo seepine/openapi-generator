@@ -1,6 +1,5 @@
 import type { TsType } from './types'
 
-/** Default: compact single-line. */
 export function printType(t: TsType): string {
   switch (t.kind) {
     case 'primitive':
@@ -56,10 +55,7 @@ function isAllSimpleObject(t: Extract<TsType, { kind: 'object' }>): boolean {
 }
 
 export interface PrintObjectMultilineOptions {
-  /**
-   * When true (default), an all-simple object collapses to inline form.
-   * Set to false to force multi-line output (used by data/params fields).
-   */
+  /** Default true: an all-simple object collapses to inline form. */
   collapseSimple?: boolean
 }
 
@@ -73,7 +69,6 @@ export function printObjectMultiline(
   const collapseSimple = options.collapseSimple ?? true
   if (collapseSimple && isAllSimpleObject(t)) return printObjectInline(t)
 
-  // Multi-line: each field on its own line, joined by `;`.
   const inner = indentStr + '  '
   const parts = t.properties.map((p) => {
     const opt = p.optional ? '?' : ''
@@ -90,7 +85,6 @@ export function printObjectMultiline(
 
 function printPropertyTypeMultiline(t: TsType, indentStr: string): string {
   if (t.kind === 'union') {
-    // Each branch on its own indented line, joined by ` | ` at start of next line.
     const branches = t.types.map((b) =>
       printPropertyTypeMultiline(b, indentStr),
     )

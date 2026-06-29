@@ -5,33 +5,22 @@ import { IMPORTS, HEADER_TYPES } from './headerTypes'
 import { tagKey } from '../utils/strings'
 
 /**
- * Generate the globals.d.ts file content from pre-built MethodAst values.
- *
- * Output structure (matches wormhole globals.d.handlebars):
+ * Generate the globals.d.ts content from pre-built MethodAst values.
  *
  *   declare global {
  *     interface Apis {
  *       <tag>: {
- *         /**
- *          * ---
- *          ...
- *          *\/
- *         <method><
- *           Config extends ...
- *         >(
- *           config?: Config
- *         ): Alova2Method<..., '<tag>.<method>', Config>;
+ *         /** ... *\/
+ *         <opId><...>(...): Alova2Method<..., '<tag>.<opId>', Config>;
  *       };
- *       ...
  *     }
- *
  *     var Apis: Apis;
  *   }
  *   export {};
  *
- * Tag identifiers are normalized upstream in the loader (e.g. `admin-config`
- * → `adminConfig`) so the interface property name, the apiDefinitions key,
- * and the runtime lookup key are always identical and legal TypeScript.
+ * Tags are normalised upstream in the loader so the interface property,
+ * the apiDefinitions key, and the runtime lookup key stay byte-identical
+ * and legal TS.
  */
 export function generateGlobals(
   methodAsts: MethodAst[],
@@ -46,9 +35,8 @@ export function generateGlobals(
   const flush = (): void => {
     if (currentMethods.length === 0) return
     const methodStrs = currentMethods.map(buildMethodSignature)
-    // Defense-in-depth: `tagKey` re-applies `toIdentifier` so callers that
-    // bypass the loader (e.g. unit tests feeding raw tags) still emit a
-    // legal TS interface key.
+    // Defense-in-depth: re-apply toIdentifier for callers that bypass the
+    // loader (e.g. unit tests feeding raw tags).
     const tag = tagKey(currentTag ?? '')
     tagBlocks.push(`    ${tag}: {\n${methodStrs.join('\n')}\n    };`)
   }

@@ -1,8 +1,6 @@
 /**
  * Leading docblock shared by apiDefinitions.ts / createApis.ts / globals.d.ts.
- *
- * Centralized here so the three generated files can never drift. Callers pass
- * the {title, version, openapiVersion} metadata read from the OpenAPI doc.
+ * Centralised here so the three files can never drift.
  */
 export interface HeaderMeta {
   title: string

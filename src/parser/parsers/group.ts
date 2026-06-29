@@ -22,7 +22,7 @@ export function parseGroup(
     return { kind: 'union', types: parsed }
   }
 
-  // intersection (allOf): merge object properties, conflicts take first
+  // allOf: merge object properties; first occurrence wins on conflict.
   const mergedProps = new Map<string, TsProperty>()
   for (const branch of parsed) {
     if (branch.kind === 'object') {

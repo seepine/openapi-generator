@@ -14,7 +14,7 @@ export type HttpMethod =
 export interface NormalizedOperation {
   /** First tag from the operation's tag array. Literal `"default"` if none. */
   tag: string
-  /** operationId; missing means the generator should skip this op. */
+  /** Missing means the generator should skip this op. */
   operationId: string | undefined
   summary?: string
   description?: string

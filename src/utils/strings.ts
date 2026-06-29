@@ -1,18 +1,9 @@
 /**
- * Convert an OpenAPI tag (or any string) into a legal TypeScript identifier.
- *
+ * OpenAPI tag → legal TypeScript identifier.
  * - `admin-config` → `adminConfig`
- * - `users` → `users`
- * - `users-v2` → `usersV2`
- * - `AdminConfig` → `adminConfig` (PascalCase also lowercased)
- * - `adminConfig` → `adminConfig` (idempotent)
+ * - `AdminConfig` → `adminConfig`
  * - `snake_case_tag` → `snakeCaseTag`
- * - `''` or invalid → `_` (fallback)
- *
- * Strategy: split on `-` / `_` / whitespace, then split each segment at
- * camelCase boundaries (lowercase|digit → uppercase), lowercase every
- * token, and reassemble as camelCase. If the result would start with a
- * digit, a leading `_` is prepended.
+ * - `''` → `_` (fallback; leading `_` is also prepended if the result starts with a digit)
  */
 export function toIdentifier(input: string): string {
   const segments = input.split(/[-_\s]+/).filter((seg) => seg.length > 0)
@@ -34,10 +25,10 @@ export function toIdentifier(input: string): string {
 }
 
 /**
- * Tag key used by both the apiDefinitions runtime map and the generated
- * `interface Apis` property. An empty/blank tag (i.e. an operation without
- * a tag) lands in the literal `default` namespace so the generated code is
- * both valid TS and discoverable (e.g. `Apis.default.getA`).
+ * Tag key shared by the apiDefinitions runtime map and the generated
+ * `interface Apis`. An empty/blank tag lands in the literal `default`
+ * namespace so the generated code is both valid TS and discoverable
+ * (e.g. `Apis.default.getA`).
  */
 export function tagKey(tag: string): string {
   return tag ? toIdentifier(tag) : 'default'

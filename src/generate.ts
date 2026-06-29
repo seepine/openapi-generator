@@ -34,8 +34,8 @@ export interface GeneratorConfig {
  *   - createApis.ts
  *   - index.ts (only if missing)
  *
- * Note: no `.prettierignore` is generated — in monorepos with multiple
- * generator outputs, a project-level ignore file is the caller's job.
+ * No `.prettierignore` is generated — in monorepos with multiple generator
+ * outputs, a project-level ignore file is the caller's job.
  *
  * Errors during loading throw immediately; per-operation parse errors
  * skip the failing op with a warning (the rest of the run continues).
@@ -49,10 +49,8 @@ export async function generate(options: GeneratorConfig): Promise<void> {
   }
   await ensureDir(outputDir)
 
-  // 1. Load + normalize
   const doc = await loadDocument(input)
 
-  // 2. Build MethodAst for each operation; skip failures
   const ctx = makeParserContext(doc.schemas)
   const successfulOps: NormalizedOperation[] = []
   const methodAsts: MethodAst[] = []
@@ -73,7 +71,6 @@ export async function generate(options: GeneratorConfig): Promise<void> {
     }
   }
 
-  // 3. Generate content
   const meta = {
     title: doc.title || 'OpenAPI',
     version: doc.infoVersion || '1.0.0',
@@ -92,10 +89,8 @@ export async function generate(options: GeneratorConfig): Promise<void> {
   const createApisContent = await safeFormat(createApisRaw, 'createApis.ts')
   const indexContent = await safeFormat(indexRaw, 'index.ts')
 
-  // 4. Write files in spec order. `apiDefinitions` / `globals` / `createApis`
-  // are always overwritten (the user is meant to regenerate them). `index.ts`
-  // is written with `exclusive: true` so it only appears the first time —
-  // once the user takes ownership of the file, we never clobber it.
+  // `index.ts` is written with `exclusive: true` so it only appears the first
+  // time — once the user takes ownership of the file, we never clobber it.
   await writeGenerated(resolve(outputDir, 'apiDefinitions.ts'), apiDefsContent)
   await writeGenerated(resolve(outputDir, 'globals.d.ts'), globalsContent)
   await writeGenerated(resolve(outputDir, 'createApis.ts'), createApisContent)
@@ -104,14 +99,9 @@ export async function generate(options: GeneratorConfig): Promise<void> {
   })
 }
 
-/**
- * Format `source` with dprint; on failure, warn and return the raw source
- * so the caller can keep writing unformatted output for that one file.
- * Keeping this wrapper in `generate()` (rather than inside `formatTypeScript`)
- * means the formatter itself stays a single-responsibility transform — its
- * contract is "format, or throw" — and the generator owns the "skip + warn"
- * policy that AGENTS.md applies to every other failure mode here.
- */
+// Lives in `generate()` (not `formatTypeScript`) so the formatter stays a
+// pure transform whose contract is "format, or throw" — the generator owns
+// the "skip + warn" policy that AGENTS.md applies to every other failure.
 async function safeFormat(source: string, filename: string): Promise<string> {
   try {
     return await formatTypeScript(source)

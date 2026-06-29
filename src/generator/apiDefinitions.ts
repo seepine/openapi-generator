@@ -11,9 +11,8 @@ export interface ApiDefinition {
 }
 
 /**
- * Build the apiDefinitions.ts file content from a list of operations.
- * Skips operations without operationId (warns). On duplicate keys the latest
- * entry wins (warns).
+ * Build the apiDefinitions.ts content. Skips operations without operationId
+ * (warns). On duplicate keys, the latest entry wins (warns).
  */
 export function generateApiDefinitions(
   operations: NormalizedOperation[],

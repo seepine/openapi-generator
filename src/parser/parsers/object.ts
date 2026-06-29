@@ -23,13 +23,10 @@ export function parseObject(ctx: ParserContext, schema: JsonSchema): TsType {
     let t: TsType = value
       ? parseSchema({ ...ctx, depth: ctx.depth + 1 }, value)
       : { kind: 'primitive', value: 'unknown' }
-    // OpenAPI 3.0 `nullable: true` on a property: union the parsed type with
-    // null. OpenAPI 3.1 expresses the same shape with `type: [<T>, 'null']`,
-    // which the parser already handles via union flattening.
-    //
-    // The inner parser may have already produced a `T | null` union (e.g.
-    // when the property schema itself carries `nullable: true` and is routed
-    // through `parseSimple`). Guard against emitting a doubled `| null`.
+    // OpenAPI 3.0 `nullable: true` on a property: union with null. The
+    // 3.1 equivalent is `type: [<T>, 'null']`, handled upstream via
+    // union flattening. Guard against a doubled `| null` when the inner
+    // parser already produced a nullable union.
     const nullable =
       value !== undefined && (value as { nullable?: boolean }).nullable === true
     if (nullable && !isNullType(t)) {

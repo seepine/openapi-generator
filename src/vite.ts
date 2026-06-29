@@ -7,11 +7,9 @@ import { isUrl } from './utils/is'
 /**
  * Options accepted by the Vite plugin.
  *
- * Mirrors {@link GeneratorConfig}, except `outputDir` is optional.
- *
  * `outputDir` resolution order (evaluated at `configResolved`):
  *   1. `undefined` → `<viteRoot>/src/api`
- *   2. absolute path (starts with `/` on POSIX, drive-letter on Windows) → used as-is
+ *   2. absolute path → used as-is
  *   3. relative path → resolved against `viteRoot`
  *
  * The same logic applies to `input` for consistency.
@@ -27,26 +25,15 @@ export interface OpenapiGeneratorOptions extends Omit<
   outputDir?: string
   /**
    * Re-run generation when the input file changes during `vite dev`.
-   *
-   * - `true` — watch the input file and regenerate on change. Uses `chokidar`
-   *   loaded lazily so projects that never enable watching pay nothing.
-   * - `false` — generate once on `buildStart` only.
-   *
+   * `chokidar` is loaded lazily so projects that never enable watching
+   * pay nothing.
    * @default true
    */
   watch?: boolean
   /**
-   * Debounce window (in seconds) for `watch` re-runs.
-   *
-   * After a `watchChange` triggers a regenerate, any subsequent
-   * `watchChange` events for the same input within this window are
-   * ignored. Once the window elapses, the next change is allowed to
-   * trigger again. This avoids re-generating on a burst of editor
-   * writes (e.g. `format on save` + duplicate FS events from
-   * save-temp / atomic rename sequences).
-   *
-   * Unit: **seconds**.
-   *
+   * Debounce window (in seconds) for `watch` re-runs. Suppresses the burst
+   * of editor writes around `format on save` (save-temp / atomic rename
+   * sequences can emit multiple FS events for one logical change).
    * @default 30
    */
   watchDebounce?: number
@@ -55,12 +42,8 @@ export interface OpenapiGeneratorOptions extends Omit<
 /**
  * Vite plugin factory that runs {@link generate} before the bundle starts.
  *
- * The function is named `openapiGenerator` (camelCase) and returns a Vite
- * plugin instance.
- *
  * @example
  * ```ts
- * // vite.config.ts
  * import { defineConfig } from 'vite'
  * import { openapiGenerator } from '@seepine/openapi-generator/vite'
  *
@@ -68,11 +51,6 @@ export interface OpenapiGeneratorOptions extends Omit<
  *   plugins: [
  *     openapiGenerator({
  *       input: 'http://localhost:3000/openapi/json',
- *       // outputDir: '<root>/src/api'
- *       // outputDir: '/abs/path/api'  // absolute path, used as-is
- *       // outputDir: 'src/api'        // resolved against viteRoot
- *
- *       // globalName: 'Apis'
  *     }),
  *   ],
  * })
@@ -80,18 +58,16 @@ export interface OpenapiGeneratorOptions extends Omit<
  */
 export function openapiGenerator(opts: OpenapiGeneratorOptions): Plugin {
   const { watch = true, watchDebounce = 30 } = opts
-  // `lastRunAt` is the timestamp (Date.now(), ms) of the last successful
-  // `runGenerate` invocation triggered by `watchChange`. `null` means
-  // nothing has been triggered yet. The wall-clock value is reset only
-  // after the actual generation completes, so a long-running regenerate
-  // does not shorten the next window.
+  // Wall-clock of the last successful runGenerate triggered by watchChange.
+  // `null` means nothing has run yet, so the first watchChange is never
+  // debounced. Reset only after generation completes, so a long-running
+  // regenerate does not shorten the next window.
   let lastRunAt: number | null = null
   let outputDir: string | undefined
   let inputAbs: string | undefined
-  // For URL inputs we cache the last-fetched document body so that a
-  // `watchChange` event whose underlying fetch returns identical bytes
-  // can short-circuit the regenerate. `null` means we have not fetched
-  // yet (the initial fetch happens in `buildStart`).
+  // Cache the last-fetched URL body so a watchChange whose fetch returns
+  // identical bytes can short-circuit the regenerate (avoids spurious HMR
+  // invalidations from writing bit-for-bit equal files).
   let lastUrlContent: string | null = null
 
   return {
@@ -101,42 +77,30 @@ export function openapiGenerator(opts: OpenapiGeneratorOptions): Plugin {
       inputAbs = resolveInput(config.root, opts.input)
     },
     async buildStart() {
-      // For URL inputs, prime the content cache so the very first
-      // `watchChange` after startup can compare against it. The fetch
-      // happens unconditionally — even if the cache compare later
-      // determines the bytes are unchanged, we always want to populate
-      // it once so the equality check has something to compare against.
+      // Prime the URL cache unconditionally — the equality check needs
+      // something to compare against on the first watchChange.
       if (isUrl(inputAbs!)) {
         lastUrlContent = await fetchAsText(inputAbs!)
       }
       await runGenerate(outputDir!, inputAbs!, opts)
       lastRunAt = Date.now()
-      // The `buildStart` run is the initial generation; it does not
-      // consume the watch debounce window. We deliberately leave
-      // `lastRunAt` as `null` so the very first `watchChange` after
-      // startup is always allowed through.
+      // The initial buildStart run does not consume the debounce window,
+      // so we deliberately leave it eligible for the first watchChange.
     },
     async watchChange(id) {
       if (!watch) return
-      // For URL inputs Vite will pass the URL string unchanged; for
-      // file inputs it passes an absolute path. Comparing the raw
-      // string would let a same-named sibling file slip through, so
-      // we normalise file inputs via `path.resolve` while leaving
-      // URLs alone (their `:` would otherwise become an OS path
-      // separator and break equality).
+      // Normalise file inputs via `path.resolve` so a same-named sibling
+      // cannot slip through; leave URLs alone (their `:` would otherwise
+      // become an OS path separator on Windows).
       const normalisedId = isUrl(id) ? id : resolve(id)
       if (normalisedId !== inputAbs) return
       const now = Date.now()
       if (lastRunAt !== null && now - lastRunAt < watchDebounce * 1000) {
         return
       }
-      // For URL inputs, fetch once and compare against the cached body.
-      // If the bytes are identical we skip `runGenerate` entirely —
-      // writing 4 files just to overwrite them with bit-for-bit equal
-      // content is wasted I/O and risks spurious HMR invalidations.
-      // A failed fetch is treated as "content may have changed" so
-      // `runGenerate` still runs (and surfaces the network error
-      // through `readDocument` rather than silently swallowing it).
+      // A failed URL fetch is treated as "content may have changed" so
+      // runGenerate still runs and surfaces the network error through
+      // readDocument rather than silently swallowing it.
       if (isUrl(inputAbs!)) {
         let fresh: string | null = null
         try {

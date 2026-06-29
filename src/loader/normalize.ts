@@ -67,8 +67,9 @@ function pickMediaType(content: Record<string, MediaTypeEntry> | undefined): {
 }
 
 /**
- * Wraps a schema object with the version discriminator. Returns undefined for
- * refs (loader does not resolve refs) or missing schemas.
+ * Wrap a schema with the version discriminator. Resolves local
+ * `#/components/schemas/X` / `#/definitions/X` refs against the schema
+ * map collected upstream. Returns undefined for missing schemas.
  */
 function tagSchema(
   schema: unknown,
@@ -77,9 +78,6 @@ function tagSchema(
 ): JsonSchema | undefined {
   if (schema === undefined || schema === null) return undefined
   if (isRef(schema)) {
-    // Resolve `$ref` against the components.schemas map collected upstream.
-    // Local refs only (`#/components/schemas/...`); cross-doc refs are out of
-    // scope.
     const ref = (schema as { $ref: string }).$ref
     if (!schemas) return undefined
     const m = /^#\/(?:components|definitions)\/schemas\/([^/]+)$/.exec(ref)
@@ -107,8 +105,7 @@ function normalize3xCommon(
     throw new Error('Unsupported OpenAPI document: missing or empty `paths`')
   }
 
-  // Collect components.schemas first so refs in operations can be resolved
-  // during the operation walk below.
+  // Collect components.schemas first so refs in operations resolve below.
   const schemas: Record<string, JsonSchema> = {}
   const components = doc.components as
     { schemas?: Record<string, unknown> } | undefined
@@ -135,9 +132,9 @@ function normalize3xCommon(
     version === '3.0' ? 'openapi30' : 'openapi31'
 
   const infoVersion = infoObj?.version ?? '1.0.0'
-  // Preserve the original `openapi` field value (e.g. `3.0.3`) so the
-  // generated header comment matches what the spec declared. Falls back to
-  // the detected major version when the field is missing.
+  // Preserve the original `openapi` value (e.g. `3.0.3`) so the generated
+  // header comment matches what the spec declared; fall back to the
+  // detected major version when the field is missing.
   const openapiRaw = readOpenapiVersion(doc, versionOut)
 
   return {
@@ -166,7 +163,6 @@ function normalizeOperationV3(
   const description =
     typeof raw.description === 'string' ? raw.description : undefined
 
-  // Parameters
   const params: NormalizedParameter[] = []
   const rawParams = raw.parameters
   if (Array.isArray(rawParams)) {
@@ -192,7 +188,6 @@ function normalizeOperationV3(
     }
   }
 
-  // Request body
   let requestBody: NormalizedRequestBody | undefined
   const rawBody = raw.requestBody
   if (isPlainObject(rawBody) && !isRef(rawBody)) {
@@ -209,7 +204,6 @@ function normalizeOperationV3(
     }
   }
 
-  // Responses
   const responsesRaw = (raw.responses ?? {}) as Record<string, unknown>
   const responses = fillResponseStatusesV3(responsesRaw, version, schemas)
 
@@ -237,7 +231,6 @@ function fillResponseStatusesV3(
 
   const codes = Object.keys(responsesRaw)
 
-  // 1. priority
   for (const code of RESPONSE_PRIORITY) {
     if (codes.includes(code)) {
       return [
@@ -246,7 +239,6 @@ function fillResponseStatusesV3(
     }
   }
 
-  // 2. any 2xx
   for (const code of codes) {
     if (/^2\d{2}$/.test(code)) {
       return [
@@ -255,7 +247,6 @@ function fillResponseStatusesV3(
     }
   }
 
-  // 3. default
   if (codes.includes('default')) {
     return [
       buildResponseFromCodeV3(

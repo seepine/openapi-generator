@@ -11,10 +11,7 @@ let _error = (msg: string): void => {
   console.error(`[openapi-generator] ${msg}`)
 }
 
-/**
- * Override the default logger. Only fields present on `logger` are replaced;
- * missing fields keep their previous defaults.
- */
+/** Override the default logger. Missing fields keep their previous defaults. */
 export function setLogger(logger: Logger): void {
   if (logger.warn) _warn = logger.warn
   if (logger.error) _error = logger.error

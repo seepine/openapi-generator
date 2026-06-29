@@ -18,12 +18,11 @@ export function parseSchema(
   if (!schema) return { kind: 'primitive', value: 'unknown' }
   if (ctx.depth > MAX_DEPTH) return { kind: 'primitive', value: 'unknown' }
 
-  // Handle $ref first
   if ('$ref' in schema && typeof schema.$ref === 'string') {
     return parseReference(ctx, schema.$ref)
   }
 
-  // Handle 3.1 type array (e.g., ['string', 'null'])
+  // 3.1 type array (e.g. ['string', 'null'])
   if (Array.isArray(schema.type)) {
     return parseTypeArray(ctx, schema)
   }

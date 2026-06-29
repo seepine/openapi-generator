@@ -2,23 +2,16 @@ import { open, rename, writeFile } from 'node:fs/promises'
 import { error } from '../utils/logger'
 
 /**
- * Atomically write `content` to `path`.
+ * Atomically write `content` to `path`. Writes go through `<path>.tmp`
+ * first, then `rename(2)` swaps into place; rename is atomic on POSIX and
+ * Windows (Node 14+ / Win10), so a crash mid-write leaves either the old
+ * or new file — never a half-written one.
  *
- * The write goes through `<path>.tmp` first, then `rename(2)` swaps it into
- * place. `rename` is atomic on POSIX (same filesystem) and on Windows
- * (since Node 14 + Win10), so a crash mid-write leaves either the old
- * contents or the new contents in place — never a half-written file.
+ * If `exclusive` is true and the target exists, the write is skipped
+ * silently (returns `false`). Used for `index.ts`, which the generator must
+ * not overwrite once the user has taken ownership.
  *
- * If `exclusive` is true and the target file already exists, the write is
- * skipped silently (returns `false`). This is the "create only if missing"
- * path used for `index.ts`, which the generator must not overwrite once the
- * user has taken ownership of it.
- *
- * Uses async I/O so the Vite plugin's `watchChange` does not block the
- * event loop while writing 4 generated files.
- *
- * @returns `true` if a file was written, `false` if `exclusive` skipped an
- * existing file.
+ * @returns `true` if a file was written, `false` if `exclusive` skipped.
  */
 export async function writeGenerated(
   path: string,

@@ -2,36 +2,8 @@ import type { MethodAst } from './methodType'
 import { printType, printObjectInline } from '../parser/printers'
 
 /**
- * Build a JSDoc block in the wormhole style:
- *
- *   /**
- *    * ---
- *    * [METHOD] summary
- *    * **path:** /foo
- *    * ---
- *    * **Path Parameters**    (only when present)
- *    * ```ts
- *    * type PathParameters = { ... }
- *    * ```
- *    * ---
- *    * **Query Parameters**   (only when present)
- *    * ```ts
- *    * type QueryParameters = { ... }
- *    * ```
- *    * ---
- *    * **RequestBody**        (only when present)
- *    * ```ts
- *    * type RequestBody = { ... }
- *    * ```
- *    * ---
- *    * **Response**
- *    * ```ts
- *    * type Response = { ... }
- *    * ```
- *    *\/
- *
- * Each section appears only when its underlying data exists. Summary falls
- * back to description when summary is absent.
+ * Wormhole-style JSDoc block. Each section appears only when its data
+ * exists; summary falls back to description when summary is absent.
  */
 export function buildJSDoc(ast: MethodAst): string {
   const summary = ast.summary ?? ast.description ?? ''
@@ -45,7 +17,6 @@ export function buildJSDoc(ast: MethodAst): string {
   const responseStr = printType(ast.responseType)
 
   const lines: string[] = ['/**']
-  // Header block: separator + summary + path
   lines.push(' * ---')
   lines.push(` * [${ast.method}] ${summary}`)
   lines.push(` * **path:** ${ast.path}`)

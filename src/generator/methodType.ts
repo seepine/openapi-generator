@@ -13,23 +13,19 @@ export interface MethodAst {
   path: string
   summary?: string
   description?: string
-  /** Request body schema only. `pathParams` is exposed separately. */
+  /** Request body schema only. pathParams is exposed separately. */
   dataType: TsType | undefined
-  /** path parameter schema (rendered under `pathParams:` in the signature). */
   pathParamsType: TsType | undefined
-  /** query parameter schema (rendered under `params:` in the signature). */
   queryParamsType: TsType | undefined
   responseType: TsType
 }
 
-/** Build the parser context from a doc. */
 export function makeParserContext(
   schemas: Record<string, JsonSchema>,
 ): ParserContext {
   return { schemas, refStack: new Set(), depth: 0 }
 }
 
-/** Parse a parameter's schema, recursing at +1 depth; falls back to a sensible default. */
 function parseParamSchema(
   ctx: ParserContext,
   schema: JsonSchema | undefined,
@@ -40,11 +36,7 @@ function parseParamSchema(
     : fallback
 }
 
-/**
- * Build the path-parameter schema only (no merging). Mirrors wormhole's
- * separation: `pathParams` is exposed as a standalone field in the
- * alova MethodConfig, distinct from `data` (request body).
- */
+/** Build the path-parameter schema only (no merging). */
 function buildPathParamsType(
   op: NormalizedOperation,
   ctx: ParserContext,
@@ -63,7 +55,6 @@ function buildPathParamsType(
   return { kind: 'object', properties: props }
 }
 
-/** Build the request body schema only. */
 function buildBodyType(
   op: NormalizedOperation,
   ctx: ParserContext,
@@ -72,7 +63,6 @@ function buildBodyType(
   return parseSchema({ ...ctx, depth: ctx.depth + 1 }, op.requestBody.schema)
 }
 
-/** Build the params (query) type. */
 export function buildParamsType(
   op: NormalizedOperation,
   ctx: ParserContext,
@@ -92,12 +82,9 @@ export function buildParamsType(
 }
 
 /**
- * Build the response type from the first 2xx response.
- *
- * Matches wormhole's `parseResponse`: when no successful response or its
- * schema is empty, emit `unknown` rather than `null`. `null` is reserved for
- * the rare case where the spec literally documents `nullable: true` /
- * `type: 'null'`.
+ * Response type from the first response that has a schema. Matches wormhole's
+ * `parseResponse`: no schema → `unknown` (not `null`; `null` is reserved for
+ * the rare spec that documents `nullable: true` / `type: 'null'`).
  */
 export function buildResponseType(
   op: NormalizedOperation,
@@ -128,43 +115,13 @@ export function buildMethodAst(
 }
 
 /**
- * Build the full method block (JSDoc + signature) for one operation.
+ * Wormhole-style method block: 6-space-indented JSDoc + signature.
  *
- * Output (matches wormhole globals.d.handlebars):
- *   /**
- *    * ---
- *    * [METHOD] summary
- *    * **path:** /foo
- *    * ---
- *    * **Path Parameters**    (only when present)
- *    * ```ts
- *    * type PathParameters = { ... }
- *    * ```
- *    * ---
- *    * **Query Parameters**   (only when present)
- *    * ```ts
- *    * type QueryParameters = { ... }
- *    * ```
- *    * ---
- *    * **RequestBody**        (only when present)
- *    * ```ts
- *    * type RequestBody = { ... }
- *    * ```
- *    * ---
- *    * **Response**
- *    * ```ts
- *    * type Response = { ... }
- *    * ```
- *    *\/
- *    name<Config extends Alova2MethodConfig<Resp> & {
- *      pathParams: { ... };  (when present)
- *      params:     { ... };  (when present)
- *      data:       { ... };  (when present)
- *    }>(
- *      config: Config
- *    ): Alova2Method<Resp, 'tag.operationId', Config>;
- *
- * Indent: 6 spaces inside the interface block (4 for tag + 2 for method).
+ *   <opId><Config extends Alova2MethodConfig<Resp> & {
+ *     pathParams: { ... };  (when present)
+ *     params:     { ... };  (when present)
+ *     data:       { ... };  (when present)
+ *   }>(config: Config): Alova2Method<Resp, 'tag.opId', Config>;
  */
 export function buildMethodSignature(ast: MethodAst): string {
   const respStr = printType(ast.responseType)
@@ -190,7 +147,6 @@ export function buildMethodSignature(ast: MethodAst): string {
 
   const sig = `${ast.operationId}<Config extends ${configType}>(${configParam}): Alova2Method<${respStr}, '${pathKey}', Config>;`
 
-  // Re-indent the JSDoc block to match the signature's 6-space indent.
   const indentedJsdoc = buildJSDoc(ast)
     .split('\n')
     .map((line) => `      ${line}`)

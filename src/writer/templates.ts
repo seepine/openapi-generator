@@ -26,12 +26,10 @@ export default Apis
 /**
  * Hardcoded copy of docs/template/createApis.ts.txt — keep in sync.
  *
- * Uses a regular template literal with `\`` (literal backtick) escapes so the
- * source file's embedded backticks remain literal in the output. `${}`
- * placeholders in the output use real `${...}` interpolation here.
- *
- * The leading docblock is supplied by renderHeaderComment so it stays in sync
- * with apiDefinitions.ts and globals.d.ts.
+ * `\`` (literal backtick) escapes keep the embedded backticks in the output
+ * literal. `${...}` placeholders in the output use real interpolation here.
+ * The leading docblock is supplied by `renderHeaderComment` so it stays in
+ * sync with apiDefinitions.ts and globals.d.ts.
  */
 const CREATE_APIS_TEMPLATE = `import type { Alova, MethodType, AlovaGenerics, AlovaMethodCreateConfig } from 'alova';
 import { Method } from 'alova';

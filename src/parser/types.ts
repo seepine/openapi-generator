@@ -21,8 +21,8 @@ export interface TsProperty {
 
 export interface ParserContext {
   schemas: Record<string, JsonSchema>
-  /** Track refs currently being resolved to break cycles. */
+  /** Refs currently being resolved — used to break cycles. */
   refStack: Set<string>
-  /** Max depth, default 30. */
+  /** Max recursion depth (default 30). */
   depth: number
 }

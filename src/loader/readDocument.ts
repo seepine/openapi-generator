@@ -26,17 +26,15 @@ async function readFileAsText(absPath: string): Promise<string> {
 
 /**
  * Fetch a URL and return its body as text. Throws on network or HTTP
- * failures so callers can decide whether to surface or swallow the error.
+ * failures so callers decide whether to surface or swallow.
  *
- * Exported so that the Vite plugin (`src/vite.ts`) can reuse the exact
- * same fetch + error-wrapping logic for its content-cache compare
- * path — keeping fetch semantics in one place avoids subtle drift
- * (e.g. different error message formats between the plugin and the
- * loader).
+ * Exported so the Vite plugin (`src/vite.ts`) reuses the same fetch +
+ * error-wrapping logic for its content-cache compare — keeping fetch
+ * semantics in one place avoids drift between plugin and loader.
  */
 export async function fetchAsText(url: string): Promise<string> {
-  // globalThis.fetch is provided by Node >= 18; types are deliberately loose to
-  // avoid pulling DOM lib into the project.
+  // globalThis.fetch is provided by Node >= 18. Types are deliberately
+  // loose to avoid pulling the DOM lib into the project.
   const fetcher = (
     globalThis as { fetch?: (input: string) => Promise<ResponseLike> }
   ).fetch
