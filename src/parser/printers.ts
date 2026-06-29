@@ -38,9 +38,6 @@ export function printObjectInline(t: TsType): string {
   return `{ ${parts.join('; ')}; }`
 }
 
-/** Property kinds whose `printType` output fits on a single line. */
-type SimpleKind = 'primitive' | 'literal' | 'ref' | 'literalUnion'
-
 function isSimpleKind(kind: TsType['kind']): boolean {
   return (
     kind === 'primitive' ||

@@ -1,7 +1,7 @@
 import type { NormalizedOperation } from '../types'
 import { warn } from '../utils/logger'
 import { renderHeaderComment } from '../writer/header'
-import { toIdentifier } from '../utils/strings'
+import { buildPathKey } from './pathKey'
 
 export interface ApiDefinition {
   key: string
@@ -19,7 +19,6 @@ export function generateApiDefinitions(
   operations: NormalizedOperation[],
   meta: { title: string; version: string; openapiVersion: string },
 ): string {
-  // Map preserves insertion order; last write wins on duplicate keys.
   const entries = new Map<string, [string, string]>()
 
   for (const op of operations) {
@@ -29,7 +28,7 @@ export function generateApiDefinitions(
       )
       continue
     }
-    const key = `${op.tag ? toIdentifier(op.tag) : ''}.${op.operationId}`
+    const key = buildPathKey(op.tag, op.operationId)
     if (entries.has(key)) {
       warn(`duplicate api definition key: ${key} (overwriting)`)
     }

@@ -2,8 +2,8 @@ import type { NormalizedOperation, JsonSchema } from '../types'
 import type { TsType, TsProperty, ParserContext } from '../parser/types'
 import { parseSchema } from '../parser/parsers'
 import { printType, printObjectInline } from '../parser/printers'
-import { toIdentifier } from '../utils/strings'
 import { buildJSDoc } from './jsdoc'
+import { buildPathKey } from './pathKey'
 
 export interface MethodAst {
   tag: string
@@ -168,12 +168,7 @@ export function buildMethodAst(
  */
 export function buildMethodSignature(ast: MethodAst): string {
   const respStr = printType(ast.responseType)
-  // pathKey is the literal apiDefinitions key — wormhole uses `tag.operationId`
-  // verbatim, with `tag` already normalized by standardLoader (e.g. `admin-
-  // config` → `adminConfig`). We normalize here as a defense-in-depth measure
-  // so unit tests / direct callers (which may bypass the loader) still
-  // produce keys that match the apiDefinitions map.
-  const pathKey = `${ast.tag ? toIdentifier(ast.tag) : ''}.${ast.operationId}`
+  const pathKey = buildPathKey(ast.tag, ast.operationId)
 
   const parts: string[] = []
   if (ast.pathParamsType) {

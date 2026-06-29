@@ -14,17 +14,16 @@ import { format } from 'dprint-node'
  * Option shape: dprint-node accepts a flat object whose keys match the
  * keys of `dprint-plugin-typescript`'s configuration schema
  * (https://dprint.dev/plugins/typescript/config/). This file ONLY pins
- * the keys needed to align dprint with `prettier.config.ts`. Every key
- * below has a `// prettier:` annotation naming the field in
- * `prettier.config.ts` that drives it. Keys that do not appear here
- * fall back to dprint's upstream default — which has been audited to
- * already match the corresponding prettier behaviour for the cases the
- * generator produces (see "Below the fold" below).
+ * the keys needed to align dprint with the host project's formatting.
+ * Every key below has a `// dprint:` annotation naming the field.
+ * Keys that do not appear here fall back to dprint's upstream default —
+ * which has been audited to already match prettier's behaviour for the
+ * cases the generator produces (see "Below the fold" below).
  *
  * Implementation notes:
- * - Every option below is derived from `prettier.config.ts`. We do NOT
- *   call `dprint.resolveConfig` and we do NOT pick up the consumer's
- *   config — generated output must be identical regardless of host repo.
+ * - Every option below is hand-pinned. We do NOT call
+ *   `dprint.resolveConfig` and we do NOT pick up the consumer's config
+ *   — generated output must be identical regardless of host repo.
  * - The first argument to `format()` is `'inline.ts'`. It is a hint string
  *   used by dprint to pick a plugin based on extension; we never read or
  *   write it from disk. See the dprint docs:
@@ -65,23 +64,24 @@ export async function formatTypeScript(source: string): Promise<string> {
   if (source.trim().length === 0) {
     return source
   }
-  // filePathis only used for type inference and does not trigger file I/O reads.
+  // filePath is only used for type inference and does not trigger file I/O reads.
   return format('inline.ts', source, {
-    // prettier: printWidth: 80   (dprint default 120)
+    // dprint: lineWidth
     lineWidth: 80,
-    // prettier: semi: false   (dprint default 'prefer' — split into comments below)
+    // dprint: semiColons (prettier equivalent: semi: false)
     semiColons: 'asi',
-    // prettier: singleQuote: true   (dprint default 'alwaysDouble')
+    // dprint: quoteStyle (prettier equivalent: singleQuote: true)
     quoteStyle: 'preferSingle',
-    // prettier: trailingComma: 'all'   (dprint has no exact equivalent; the
-    // closest is 'always' which adds a trailing comma on single-line arrays
-    // too — e.g. ['POST', '/x',]. prettier only adds a trailing comma when
-    // the literal spans multiple lines. dprint's 'onlyMultiLine' default
-    // matches prettier's actual output more closely for our generator
-    // artefacts. See test/writer/format.test.ts for the snapshot that
-    // pins this difference.
+    // dprint: trailingCommas (prettier equivalent: trailingComma: 'all').
+    // The closest match is 'always', which adds a trailing comma on
+    // single-line arrays too — e.g. ['POST', '/x',]. prettier only
+    // adds a trailing comma when the literal spans multiple lines.
+    // dprint's 'onlyMultiLine' default matches prettier's actual output
+    // more closely for our generator artefacts. See
+    // test/writer/format.test.ts for the snapshot that pins this
+    // difference.
     trailingCommas: 'onlyMultiLine',
-    // prettier: arrowParens: 'always'   (dprint default 'maintain')
+    // dprint: arrowFunction.useParentheses (prettier equivalent: arrowParens: 'always')
     'arrowFunction.useParentheses': 'force',
     // === dprint-only safety pin ===
     // No prettier equivalent. `deno: true` flips several dprint defaults

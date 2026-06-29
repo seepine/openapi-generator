@@ -20,7 +20,6 @@ export function toIdentifier(input: string): string {
   const tokens = segments
     .map((seg) =>
       seg
-        // Insert a separator at every camelCase boundary, then lowercase.
         .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
         .toLowerCase()
         .split(/\s+/)

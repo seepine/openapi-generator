@@ -44,7 +44,6 @@ export async function generate(options: GeneratorConfig): Promise<void> {
   const { input, outputDir, globalName = 'Apis' } = options
 
   assertAbsolute(outputDir, 'outputDir')
-  // input must be an absolute file path OR a URL; relative paths / remote URL hosts are not validated here
   if (!isUrl(input)) {
     assertAbsolute(input, 'input')
   }
@@ -81,7 +80,7 @@ export async function generate(options: GeneratorConfig): Promise<void> {
     openapiVersion: doc.openapiVersion,
   }
 
-  // Pre-format every artifact through Prettier so the printer's hand-rolled
+  // Pre-format every artifact through dprint so the printer's hand-rolled
   // newlines/indents converge on the project's code style.
   const apiDefsRaw = generateApiDefinitions(successfulOps, meta)
   const globalsRaw = generateGlobals(methodAsts, globalName, meta)
@@ -106,7 +105,7 @@ export async function generate(options: GeneratorConfig): Promise<void> {
 }
 
 /**
- * Format `source` with Prettier; on failure, warn and return the raw source
+ * Format `source` with dprint; on failure, warn and return the raw source
  * so the caller can keep writing unformatted output for that one file.
  * Keeping this wrapper in `generate()` (rather than inside `formatTypeScript`)
  * means the formatter itself stays a single-responsibility transform — its
@@ -118,7 +117,7 @@ async function safeFormat(source: string, filename: string): Promise<string> {
     return await formatTypeScript(source)
   } catch (e) {
     warn(
-      `prettier formatting failed for ${filename}: ${(e as Error).message}; writing unformatted output`,
+      `dprint formatting failed for ${filename}: ${(e as Error).message}; writing unformatted output`,
     )
     return source
   }

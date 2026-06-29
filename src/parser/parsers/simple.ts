@@ -2,7 +2,6 @@ import type { JsonSchema } from '../../types'
 import type { TsType, ParserContext } from '../types'
 
 export function parseSimple(ctx: ParserContext, schema: JsonSchema): TsType {
-  // type has been narrowed by forward() to string/number/boolean/null
   const t = schema.type as string
 
   // `format` is a validation hint in OpenAPI (email / date-time / uri /

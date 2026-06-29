@@ -2,9 +2,7 @@ import { join, resolve, isAbsolute } from 'node:path'
 import type { Plugin } from 'vite'
 import { generate, type GeneratorConfig } from './generate'
 import { fetchAsText } from './loader/readDocument'
-
-/** Local mirror of loader/readDocument.isUrl — keeps URL inputs untouched. */
-const isUrl = (s: string): boolean => /^https?:\/\//i.test(s)
+import { isUrl } from './utils/is'
 
 /**
  * Options accepted by the Vite plugin.

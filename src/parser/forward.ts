@@ -21,9 +21,8 @@ export function forward(schema: JsonSchema | undefined): ForwardTarget {
   if ('anyOf' in schema && Array.isArray(schema.anyOf)) return 'union'
   if ('allOf' in schema && Array.isArray(schema.allOf)) return 'intersection'
 
-  // 3.1 type can be an array (e.g., ['string', 'null']); the array form is
-  // handled by `parseTypeArray` before dispatch, so any remaining array form
-  // falls through here as 'unknown' to avoid a misleading 'object' label.
+  // 3.1 type-array (e.g. ['string','null']) is parsed upstream in parseTypeArray;
+  // fall through to 'unknown' here.
   if (Array.isArray(schema.type)) return 'unknown'
 
   switch (schema.type) {
