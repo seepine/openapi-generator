@@ -9,7 +9,7 @@ import type {
   NormalizedResponse,
   OpenApiVersion,
 } from '../types'
-import { toIdentifier } from '../utils/strings'
+import { tagKey } from '../utils/strings'
 
 const HTTP_METHODS: HttpMethod[] = [
   'get',
@@ -159,11 +159,7 @@ function normalizeOperationV3(
 ): NormalizedOperation {
   const tags = Array.isArray(raw.tags) ? (raw.tags as unknown[]) : []
   const rawTag = ((tags[0] as string | undefined) ?? '').trim()
-  // Preserve empty tags verbatim so the generated interface keys line up
-  // with what the user wrote in their spec. Hyphenated / snake_case tags
-  // are normalized to a legal TS identifier so the generated `interface
-  // Apis { adminConfig: { ... } }` always compiles.
-  const tag = rawTag ? toIdentifier(rawTag) : ''
+  const tag = tagKey(rawTag)
 
   const opId = typeof raw.operationId === 'string' ? raw.operationId : undefined
   const summary = typeof raw.summary === 'string' ? raw.summary : undefined
@@ -346,11 +342,7 @@ function normalizeOperationV2(
 ): NormalizedOperation {
   const tags = Array.isArray(raw.tags) ? (raw.tags as unknown[]) : []
   const rawTag = ((tags[0] as string | undefined) ?? '').trim()
-  // Preserve empty tags verbatim so the generated interface keys line up
-  // with what the user wrote in their spec. Hyphenated / snake_case tags
-  // are normalized to a legal TS identifier so the generated `interface
-  // Apis { adminConfig: { ... } }` always compiles.
-  const tag = rawTag ? toIdentifier(rawTag) : ''
+  const tag = tagKey(rawTag)
 
   const opId = typeof raw.operationId === 'string' ? raw.operationId : undefined
   const summary = typeof raw.summary === 'string' ? raw.summary : undefined

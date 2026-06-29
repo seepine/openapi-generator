@@ -12,7 +12,7 @@ export type HttpMethod =
 
 /** Internal normalized operation (spec §3.3.4). */
 export interface NormalizedOperation {
-  /** First tag from the operation's tag array. Empty string if none. */
+  /** First tag from the operation's tag array. Literal `"default"` if none. */
   tag: string
   /** operationId; missing means the generator should skip this op. */
   operationId: string | undefined

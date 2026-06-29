@@ -32,3 +32,13 @@ export function toIdentifier(input: string): string {
     .join('')
   return /^\d/.test(camel) ? `_${camel}` : camel
 }
+
+/**
+ * Tag key used by both the apiDefinitions runtime map and the generated
+ * `interface Apis` property. An empty/blank tag (i.e. an operation without
+ * a tag) lands in the literal `default` namespace so the generated code is
+ * both valid TS and discoverable (e.g. `Apis.default.getA`).
+ */
+export function tagKey(tag: string): string {
+  return tag ? toIdentifier(tag) : 'default'
+}

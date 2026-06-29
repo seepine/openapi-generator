@@ -102,12 +102,12 @@ describe('generateApiDefinitions', () => {
     expect(messages.some((m) => m.includes('auth.login'))).toBe(true)
   })
 
-  it('5. missing tag → key starts with ".operationId" (empty tag)', () => {
+  it('5. missing tag → key uses "default" namespace', () => {
     const out = generateApiDefinitions(
       [makeOp({ tag: '', operationId: 'ping', method: 'get', path: '/ping' })],
       META,
     )
-    expect(out).toContain("'.ping':")
+    expect(out).toContain("'default.ping':")
   })
 
   it('6. header check → reference + wormhole-style comment', () => {

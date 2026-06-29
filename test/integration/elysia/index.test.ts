@@ -82,8 +82,8 @@ describe('integration: elysia (zod) + @elysiajs/openapi → openapi-generator', 
       'utf-8',
     )
 
-    // elysia 默认没有 tag，生成器把 tag 折叠为 '' 并与 opId 拼成 "<tag>.<opId>"
-    // 当 tag 为空时呈现为 ".getTodos"（前导点表示空 tag 段）
+    // elysia 默认没有 tag，生成器把空 tag 归入 `default` 命名空间，
+    // 与 opId 拼成 "<tag>.<opId>"，所以呈现为 "default.getTodos"。
     for (const opId of [
       'getTodos',
       'postTodos',
@@ -94,7 +94,7 @@ describe('integration: elysia (zod) + @elysiajs/openapi → openapi-generator', 
       'postOauthToken',
       'postIntegrationsToggle',
     ]) {
-      expect(apiDefs).toContain(`'.${opId}':`)
+      expect(apiDefs).toContain(`'default.${opId}':`)
     }
 
     expect(apiDefs).toContain("'/todos'")

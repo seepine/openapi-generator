@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toIdentifier } from '../../src/utils/strings'
+import { tagKey, toIdentifier } from '../../src/utils/strings'
 
 describe('toIdentifier', () => {
   it('converts kebab-case to camelCase', () => {
@@ -39,5 +39,23 @@ describe('toIdentifier', () => {
 
   it('prefixes "_" when the result would start with a digit', () => {
     expect(toIdentifier('123-users')).toBe('_123Users')
+  })
+})
+
+describe('tagKey', () => {
+  it('returns "default" for empty input', () => {
+    expect(tagKey('')).toBe('default')
+  })
+
+  it('normalizes a real tag via toIdentifier', () => {
+    expect(tagKey('admin-config')).toBe('adminConfig')
+    expect(tagKey('auth')).toBe('auth')
+  })
+
+  // Whitespace-only input is the loader's responsibility — it trims before
+  // calling `tagKey`. Documenting the current behavior here so the
+  // contract isn't silently changed.
+  it('passes whitespace-only input through to toIdentifier', () => {
+    expect(tagKey('   ')).toBe('_')
   })
 })

@@ -2,7 +2,7 @@ import type { MethodAst } from './methodType'
 import { buildMethodSignature } from './methodType'
 import { renderHeaderComment } from '../writer/header'
 import { IMPORTS, HEADER_TYPES } from './headerTypes'
-import { toIdentifier } from '../utils/strings'
+import { tagKey } from '../utils/strings'
 
 /**
  * Generate the globals.d.ts file content from pre-built MethodAst values.
@@ -46,15 +46,11 @@ export function generateGlobals(
   const flush = (): void => {
     if (currentMethods.length === 0) return
     const methodStrs = currentMethods.map(buildMethodSignature)
-    // Defense-in-depth: even though the loader normalizes tags, this layer
-    // re-applies `toIdentifier` so callers that bypass the loader (e.g.
-    // unit tests feeding raw tags) still emit a legal TS interface key.
-    // An untagged operation MUST emit a quoted empty-string property key
-    // (matching the apiDefinitions pathKey shape where `.operationId`
-    // becomes property ''). The bare `:` we used to emit is invalid TS
-    // and also confuses Prettier into a hard parse error at generation.
-    const tagKey = currentTag ? toIdentifier(currentTag) : `''`
-    tagBlocks.push(`    ${tagKey}: {\n${methodStrs.join('\n')}\n    };`)
+    // Defense-in-depth: `tagKey` re-applies `toIdentifier` so callers that
+    // bypass the loader (e.g. unit tests feeding raw tags) still emit a
+    // legal TS interface key.
+    const tag = tagKey(currentTag ?? '')
+    tagBlocks.push(`    ${tag}: {\n${methodStrs.join('\n')}\n    };`)
   }
 
   for (const ast of methodAsts) {
