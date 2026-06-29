@@ -1,8 +1,9 @@
 # openapi-generator
 
-[![npm version][npm-version-src]][npm-version-href]
-[![npm downloads][npm-downloads-src]][npm-downloads-href]
-[![License][license-src]][license-href]
+[![codecov][codecov-img]][codecov-href]
+[![npm version][npm-version-img]][npm-version-href]
+[![npm downloads][npm-downloads-img]][npm-downloads-href]
+[![License][license-img]][license-href]
 
 将 OpenAPI JSON 文档，生成适用于 [alova](https://alova.js.org/) 拥有完整的类型提示的 TypeScript 代码
 
@@ -119,9 +120,11 @@ pnpm format     # prettier 格式化
 
 MIT © [seepine](https://github.com/seepine)
 
-[npm-version-src]: https://img.shields.io/npm/v/@seepine/openapi-generator
+[codecov-img]: https://codecov.io/gh/seepine/openapi-generator/graph/badge.svg
+[codecov-href]: https://codecov.io/gh/seepine/openapi-generator
+[npm-version-img]: https://img.shields.io/npm/v/@seepine/openapi-generator
 [npm-version-href]: https://www.npmjs.com/package/@seepine/openapi-generator
-[npm-downloads-src]: https://img.shields.io/npm/dm/@seepine/openapi-generator
+[npm-downloads-img]: https://img.shields.io/npm/dm/@seepine/openapi-generator
 [npm-downloads-href]: https://npmjs.com/package/@seepine/openapi-generator
-[license-src]: https://img.shields.io/github/license/seepine/openapi-generator.svg
+[license-img]: https://img.shields.io/github/license/seepine/openapi-generator.svg
 [license-href]: https://github.com/seepine/openapi-generator/blob/main/LICENSE
