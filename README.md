@@ -4,12 +4,7 @@
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![License][license-src]][license-href]
 
-将 OpenAPI 文档，生成适用于 alova 拥有完整的类型提示的 TypeScript 代码
-
-```ts
-// 直接使用
-Apis.user.login({ data: { username, password } })
-```
+将 OpenAPI JSON 文档，生成适用于 [alova](https://alova.js.org/) 拥有完整的类型提示的 TypeScript 代码
 
 ## 安装
 
@@ -29,7 +24,7 @@ import { resolve } from 'node:path'
 
 await generate({
   input: resolve('./openapi.json'),
-  // input: 'http://localhost:3000/openapi/json',
+  // 或者 input: 'http://localhost:3000/openapi/json',
   outputDir: resolve('./src/api'),
 })
 ```
@@ -41,12 +36,12 @@ src/api/
 ├── apiDefinitions.ts   # 'tag.operationId' → [METHOD, path]
 ├── globals.d.ts        # declare global { interface Apis { ... } }
 ├── createApis.ts       # createApis / mountApis / withConfigType
-└── index.ts            # alovaInstance + mountApis（首次生成后归你）
+└── index.ts            # alovaInstance + mountApis（不存在则生成，不会重复覆盖）
 ```
 
 ## Vite 插件
 
-### openapiGenerator
+### vite.config.ts
 
 ```ts
 // vite.config.ts
@@ -57,12 +52,25 @@ export default defineConfig({
   plugins: [
     openapiGenerator({
       input: 'http://localhost:3000/openapi/json',
-      // outputDir 默认 <root>/src/api
-      // watch 默认 true：dev 时监听 input 变更自动重新生成
-      // watchDebounce 默认生成间隔 30 秒
+      // outputDir: 'src/api',       // 默认 <root>/src/api
+      // watch: true,         // 默认vite热重载时监听 input 是否变化，若变化重新生成
+      // watchDebounce: 30,   // 默认30秒生成间隔
+      // globalName: 'Apis',  // 默认挂载到 window.Apis，可改成任意值
     }),
   ],
 })
+```
+
+### main.ts
+
+```ts
+import './api'
+```
+
+### 使用
+
+```ts
+Apis.user.login({ data: { username, password } })
 ```
 
 字段：

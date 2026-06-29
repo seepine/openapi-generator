@@ -2,7 +2,7 @@
 
 ## 简介
 
-一个纯 Node 的 CLI / 库，把 Swagger 2.0 / OpenAPI 3.0 / 3.1 的 JSON 文档编译成 [alova](https://alova.js.org/) 友好的 TypeScript 客户端
+将 OpenAPI JSON 文档，生成适用于 [alova](https://alova.js.org/) 拥有完整的类型提示的 TypeScript 代码
 
 ```
 src/
