@@ -20,7 +20,7 @@ import {
 import { mkdtemp, writeFile, mkdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { openapiGenerator } from '../src/vite'
+import { openapiGenerator, toForwardSlash } from '../src/vite'
 import * as generateModule from '../src/generate'
 import type { GeneratorConfig } from '../src/generate'
 
@@ -430,6 +430,36 @@ describe('openapiGenerator (vite plugin)', () => {
 
       expect(fetchSpy).not.toHaveBeenCalled()
       expect(generateSpy).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  /**
+   * Windows path separator handling.
+   *
+   * On Windows, `node:path.resolve` returns backslashes while Vite hands
+   * `watchChange` a POSIX-style path (e.g. `C:/x/y.json`). A raw byte
+   * compare would silently drop every dev-mode regeneration, so both
+   * sides of the equality check go through `toForwardSlash` before the
+   * comparison. The pure-function cases verify the helper; the
+   * end-to-end plugin behaviour is covered by manual Windows testing
+   * (mocking `node:path` is impractical here because Node's built-in
+   * module exports are read-only and `vi.mock('node:path', ...)` would
+   * leak into every other test in the file).
+   */
+  describe('Windows path separator handling', () => {
+    it('toForwardSlash replaces backslashes with forward slashes', () => {
+      expect(toForwardSlash('C:\\foo\\bar.json')).toBe('C:/foo/bar.json')
+    })
+
+    it('toForwardSlash leaves forward-slash paths unchanged', () => {
+      expect(toForwardSlash('C:/foo/bar.json')).toBe('C:/foo/bar.json')
+      expect(toForwardSlash('/abs/path.json')).toBe('/abs/path.json')
+    })
+
+    it('toForwardSlash handles a mix of separators', () => {
+      expect(toForwardSlash('C:\\foo/bar\\baz.json')).toBe(
+        'C:/foo/bar/baz.json',
+      )
     })
   })
 })

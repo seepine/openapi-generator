@@ -89,11 +89,16 @@ export function openapiGenerator(opts: OpenapiGeneratorOptions): Plugin {
     },
     async watchChange(id) {
       if (!watch) return
-      // Normalise file inputs via `path.resolve` so a same-named sibling
-      // cannot slip through; leave URLs alone (their `:` would otherwise
-      // become an OS path separator on Windows).
-      const normalisedId = isUrl(id) ? id : resolve(id)
-      if (normalisedId !== inputAbs) return
+      // Normalise both sides to forward slashes so the equality check
+      // holds on every platform. Vite always hands us a POSIX-style
+      // path (e.g. `C:/x/y.json`), while `node:path.resolve` returns
+      // backslashes on Windows — a raw byte compare would silently
+      // drop every dev-mode regeneration there. `inputAbs` itself
+      // keeps its native form for `runGenerate` so `assertAbsolute`
+      // recognises it. URLs are left alone — their `:` would
+      // otherwise become an OS path separator on Windows.
+      const normalisedId = isUrl(id) ? id : toForwardSlash(resolve(id))
+      if (normalisedId !== toForwardSlash(inputAbs!)) return
       const now = Date.now()
       if (lastRunAt !== null && now - lastRunAt < watchDebounce * 1000) {
         return
@@ -123,6 +128,19 @@ function resolveOutputDir(root: string, outputDir: string | undefined): string {
   if (!outputDir) return join(root, 'src', 'api')
   if (isAbsolute(outputDir)) return outputDir
   return resolve(root, outputDir)
+}
+
+/**
+ * Normalise a path to forward slashes for cross-platform identity checks.
+ *
+ * Vite hands `watchChange` a POSIX-style path on every platform (e.g.
+ * `C:/x/y.json`), while `node:path.resolve` returns backslashes on
+ * Windows. A byte-for-byte compare would silently drop every dev-mode
+ * regeneration on Windows, so this helper normalises both sides before
+ * the equality check. Exported for unit tests.
+ */
+export function toForwardSlash(p: string): string {
+  return p.replace(/\\/g, '/')
 }
 
 function resolveInput(root: string, input: string): string {
