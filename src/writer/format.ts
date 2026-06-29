@@ -18,7 +18,7 @@ export async function formatTypeScript(source: string = ''): Promise<string> {
     return source
   }
   return dprint.format('inline.ts', source, {
-    lineWidth: 80,
+    lineWidth: 100,
     semiColons: 'asi',
     quoteStyle: 'preferSingle',
     // dprint's default matches prettier's multi-line trailing-comma
