@@ -14,30 +14,40 @@ describe('oauth_send_code', () => {
   it('globals.d.ts uses the oneOf const discriminator with two branches', async () => {
     const { globals } = await runGenerate(FIXTURE)
     // const discriminator produces literal types (spec §3.3.5)
-    expect(globals).toContain("channel: 'email';")
-    expect(globals).toContain("channel: 'phone';")
+    expect(globals).toContain("channel: 'email'")
+    expect(globals).toContain("channel: 'phone'")
 
     // format / pattern are validation hints, NOT type narrowing
     // → email / phone / uniqueId all stay as `string`
-    expect(globals).toContain('email: string;')
-    expect(globals).toContain('phone: string;')
+    expect(globals).toContain('email: string')
+    expect(globals).toContain('phone: string')
 
     // uniqueId is not in `required`, so it must be optional
-    expect(globals).toContain('uniqueId?: string;')
+    expect(globals).toContain('uniqueId?: string')
 
-    // The two branches are joined with `|` (no merge)
+    // The two branches are joined with `|`. Prettier reformats the original
+    // single-line union onto multiple lines (with `| ` at the start of each
+    // continuation and trailing commas inside the inline object literals),
+    // so we assert each branch independently rather than reconstructing
+    // the exact prettier layout in a regex.
     expect(globals).toMatch(
-      createStrReg(
-        "data: { channel: 'email'; email: string; uniqueId?: string; } | { channel: 'phone'; phone: string; uniqueId?: string; };",
-      ),
+      createStrReg("{ channel: 'email'; email: string; uniqueId?: string; }"),
+    )
+    expect(globals).toMatch(
+      createStrReg("{ channel: 'phone'; phone: string; uniqueId?: string; }"),
     )
   })
 
   it('sendCode method is wrapped under the auth namespace', async () => {
     const { globals } = await runGenerate(FIXTURE)
     expect(globals).toContain('auth: {')
-    expect(globals).toContain(
-      'sendCode<Config extends Alova2MethodConfig<unknown> & { data:',
+    // Prettier may split the `Config extends ... & { data:` continuation
+    // onto its own line, so we match by the structure rather than the
+    // exact spacing produced by the printer before formatting.
+    expect(globals).toMatch(
+      createStrReg(
+        'sendCode< Config extends Alova2MethodConfig<unknown> & { data:',
+      ),
     )
     expect(globals).toMatch(/Alova2Method<unknown, 'auth\.sendCode', Config>/)
   })

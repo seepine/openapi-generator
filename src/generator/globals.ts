@@ -49,7 +49,11 @@ export function generateGlobals(
     // Defense-in-depth: even though the loader normalizes tags, this layer
     // re-applies `toIdentifier` so callers that bypass the loader (e.g.
     // unit tests feeding raw tags) still emit a legal TS interface key.
-    const tagKey = currentTag ? toIdentifier(currentTag) : ''
+    // An untagged operation MUST emit a quoted empty-string property key
+    // (matching the apiDefinitions pathKey shape where `.operationId`
+    // becomes property ''). The bare `:` we used to emit is invalid TS
+    // and also confuses Prettier into a hard parse error at generation.
+    const tagKey = currentTag ? toIdentifier(currentTag) : `''`
     tagBlocks.push(`    ${tagKey}: {\n${methodStrs.join('\n')}\n    };`)
   }
 

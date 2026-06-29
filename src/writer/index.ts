@@ -1,4 +1,5 @@
 export { renderIndex, renderCreateApis } from './templates'
 export { renderHeaderComment } from './header'
+export { formatTypeScript } from './format'
 export type { HeaderMeta } from './header'
 export { writeGenerated } from './file'

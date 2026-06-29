@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createServer, type Server } from 'node:http'
 import { generate } from '../src/generate'
+import { createStrReg } from './_helper'
 
 let tmpRoot: string
 let tmp: string
@@ -109,7 +110,10 @@ describe('generate', () => {
     const content = await fs.readFile(join(tmp, 'globals.d.ts'), 'utf-8')
     expect(content).toContain('interface Apis')
     expect(content).toContain('auth: {')
-    expect(content).toContain('login<Config extends')
+    // Prettier splits `<Config extends ...>` onto its own line, so the needle
+    // must include the break explicitly (the whitespace-tolerant helper
+    // matches both single-space and newline runs).
+    expect(content).toMatch(createStrReg('login< Config extends'))
     expect(content).toContain('Alova2MethodConfig<')
     expect(content).toContain('Alova2Method<')
     expect(content).toContain("'auth.login'")
@@ -134,7 +138,9 @@ describe('generate', () => {
     expect(createApisContent).toContain('(globalThis as any).MyApis = MyApis')
     expect(createApisContent).not.toContain('(globalThis as any).Apis = Apis')
     expect(globalsContent).toContain('interface MyApis')
-    expect(globalsContent).toContain('var MyApis: MyApis;')
+    // The project's prettier config sets `semi: false`, so the trailing
+    // `;` after `var MyApis: MyApis` is dropped during formatting.
+    expect(globalsContent).toMatch(createStrReg('var MyApis: MyApis'))
   })
 
   it('index.ts uses the baseURL/alovaInstance template', async () => {

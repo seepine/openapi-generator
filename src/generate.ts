@@ -9,6 +9,7 @@ import { generateGlobals } from '@/generator/globals'
 import { buildMethodAst, makeParserContext } from '@/generator/methodType'
 import type { MethodAst } from '@/generator/methodType'
 import { writeGenerated } from '@/writer/file'
+import { formatTypeScript } from '@/writer/format'
 import { renderCreateApis, renderIndex } from '@/writer/templates'
 
 export interface GeneratorConfig {
@@ -79,12 +80,18 @@ export async function generate(options: GeneratorConfig): Promise<void> {
     version: doc.infoVersion || '1.0.0',
     openapiVersion: doc.openapiVersion,
   }
-  const apiDefsContent = generateApiDefinitions(successfulOps, meta)
-  const globalsContent = generateGlobals(methodAsts, globalName, meta)
-  const createApisContent = renderCreateApis({
-    globalName,
-    ...meta,
-  })
+
+  // Pre-format every artifact through Prettier so the printer's hand-rolled
+  // newlines/indents converge on the project's code style.
+  const apiDefsRaw = generateApiDefinitions(successfulOps, meta)
+  const globalsRaw = generateGlobals(methodAsts, globalName, meta)
+  const createApisRaw = renderCreateApis({ globalName, ...meta })
+  const indexRaw = renderIndex()
+
+  const apiDefsContent = await safeFormat(apiDefsRaw, 'apiDefinitions.ts')
+  const globalsContent = await safeFormat(globalsRaw, 'globals.d.ts')
+  const createApisContent = await safeFormat(createApisRaw, 'createApis.ts')
+  const indexContent = await safeFormat(indexRaw, 'index.ts')
 
   // 4. Write files in spec order. `apiDefinitions` / `globals` / `createApis`
   // are always overwritten (the user is meant to regenerate them). `index.ts`
@@ -93,7 +100,26 @@ export async function generate(options: GeneratorConfig): Promise<void> {
   await writeGenerated(resolve(outputDir, 'apiDefinitions.ts'), apiDefsContent)
   await writeGenerated(resolve(outputDir, 'globals.d.ts'), globalsContent)
   await writeGenerated(resolve(outputDir, 'createApis.ts'), createApisContent)
-  await writeGenerated(resolve(outputDir, 'index.ts'), renderIndex(), {
+  await writeGenerated(resolve(outputDir, 'index.ts'), indexContent, {
     exclusive: true,
   })
+}
+
+/**
+ * Format `source` with Prettier; on failure, warn and return the raw source
+ * so the caller can keep writing unformatted output for that one file.
+ * Keeping this wrapper in `generate()` (rather than inside `formatTypeScript`)
+ * means the formatter itself stays a single-responsibility transform — its
+ * contract is "format, or throw" — and the generator owns the "skip + warn"
+ * policy that AGENTS.md applies to every other failure mode here.
+ */
+async function safeFormat(source: string, filename: string): Promise<string> {
+  try {
+    return await formatTypeScript(source)
+  } catch (e) {
+    warn(
+      `prettier formatting failed for ${filename}: ${(e as Error).message}; writing unformatted output`,
+    )
+    return source
+  }
 }
