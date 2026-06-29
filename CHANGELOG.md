@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.2](/seepine/openapi-generator/compare/v0.1.1...v0.1.2) (2026-06-29)
+
+
+### 🐛 Bug Fixes
+
+* **vite:** normalise path separators in watchChange equality check ([606ac3f](/seepine/openapi-generator/commit/606ac3f361330fb926b647e8309156176cbe1d6b))
+* **writer:** use default import for dprint-node ([4a1e72d](/seepine/openapi-generator/commit/4a1e72d24e7fdbfab583e87b1a66a52fbb342f60))
+
 ## [0.1.1](/seepine/openapi-generator/compare/v0.1.0...v0.1.1) (2026-06-29)
 
 
