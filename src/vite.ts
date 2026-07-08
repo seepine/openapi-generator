@@ -37,6 +37,14 @@ export interface OpenapiGeneratorOptions extends Omit<
    * @default 30
    */
   watchDebounce?: number
+  /**
+   * Run generation during `vite build`. Off by default — production
+   * builds typically consume the already-generated `src/api` directory
+   * produced by `vite dev` (or by a pre-build script), and skipping
+   * generation avoids redundant network/IO during CI builds.
+   * @default false
+   */
+  runOnBuild?: boolean
 }
 
 /**
@@ -57,7 +65,7 @@ export interface OpenapiGeneratorOptions extends Omit<
  * ```
  */
 export function openapiGenerator(opts: OpenapiGeneratorOptions): Plugin {
-  const { watch = true, watchDebounce = 30 } = opts
+  const { watch = true, watchDebounce = 30, runOnBuild = false } = opts
   // Wall-clock of the last successful runGenerate triggered by watchChange.
   // `null` means nothing has run yet, so the first watchChange is never
   // debounced. Reset only after generation completes, so a long-running
@@ -69,14 +77,22 @@ export function openapiGenerator(opts: OpenapiGeneratorOptions): Plugin {
   // identical bytes can short-circuit the regenerate (avoids spurious HMR
   // invalidations from writing bit-for-bit equal files).
   let lastUrlContent: string | null = null
+  // 默认 build 模式来兜底任何 configResolved 未先执行的异常路径（CI 直接调 buildStart、
+  // hook 顺序被破坏等），让 buildStart 因 command==='build' 直接早返回，
+  // 避免在 plugin 装载失败时仍然去 fetch URL / 读文件 / 跑 generate。
+  let command: 'serve' | 'build' = 'build'
 
   return {
     name: 'openapi-generator',
     async configResolved(config) {
       outputDir = resolveOutputDir(config.root, opts.outputDir)
       inputAbs = resolveInput(config.root, opts.input)
+      command = config.command
     },
     async buildStart() {
+      if (command === 'build' && !runOnBuild) {
+        return
+      }
       // Prime the URL cache unconditionally — the equality check needs
       // something to compare against on the first watchChange.
       if (isUrl(inputAbs!)) {
@@ -88,7 +104,9 @@ export function openapiGenerator(opts: OpenapiGeneratorOptions): Plugin {
       // so we deliberately leave it eligible for the first watchChange.
     },
     async watchChange(id) {
-      if (!watch) return
+      if (!watch) {
+        return
+      }
       // Normalise both sides to forward slashes so the equality check
       // holds on every platform. Vite always hands us a POSIX-style
       // path (e.g. `C:/x/y.json`), while `node:path.resolve` returns
@@ -98,7 +116,9 @@ export function openapiGenerator(opts: OpenapiGeneratorOptions): Plugin {
       // recognises it. URLs are left alone — their `:` would
       // otherwise become an OS path separator on Windows.
       const normalisedId = isUrl(id) ? id : toForwardSlash(resolve(id))
-      if (normalisedId !== toForwardSlash(inputAbs!)) return
+      if (normalisedId !== toForwardSlash(inputAbs!)) {
+        return
+      }
       const now = Date.now()
       if (lastRunAt !== null && now - lastRunAt < watchDebounce * 1000) {
         return
@@ -107,16 +127,15 @@ export function openapiGenerator(opts: OpenapiGeneratorOptions): Plugin {
       // runGenerate still runs and surfaces the network error through
       // readDocument rather than silently swallowing it.
       if (isUrl(inputAbs!)) {
-        let fresh: string | null = null
         try {
-          fresh = await fetchAsText(inputAbs!)
+          const fresh = await fetchAsText(inputAbs!)
+          if (fresh === lastUrlContent) return
+          lastUrlContent = fresh
         } catch {
-          await runGenerate(outputDir!, inputAbs!, opts)
-          lastRunAt = Date.now()
-          return
+          // A failed URL fetch is treated as "content may have changed"
+          // so runGenerate still runs and surfaces the network error
+          // through readDocument rather than silently swallowing it.
         }
-        if (fresh === lastUrlContent) return
-        lastUrlContent = fresh
       }
       await runGenerate(outputDir!, inputAbs!, opts)
       lastRunAt = Date.now()

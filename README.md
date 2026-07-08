@@ -56,6 +56,7 @@ export default defineConfig({
       // outputDir: 'src/api',       // 默认 <root>/src/api
       // watch: true,         // 默认vite热重载时监听 input 是否变化，若变化重新生成
       // watchDebounce: 30,   // 默认30秒生成间隔
+      // runOnBuild: false,   // 默认 vite build 阶段不执行；需要时改为 true
       // globalName: 'Apis',  // 默认挂载到 window.Apis，可改成任意值
     }),
   ],

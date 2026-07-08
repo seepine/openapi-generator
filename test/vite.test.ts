@@ -54,7 +54,28 @@ async function boot(
   tmpRoot: string,
   extraMs: number,
 ): Promise<() => Promise<void>> {
-  await getHook(plugin, 'configResolved').call({}, { root: tmpRoot })
+  return bootWithCommand(plugin, inputFile, tmpRoot, extraMs, 'serve')
+}
+
+/**
+ * Like {@link boot} but lets the test pin the Vite `command` field that
+ * `configResolved` receives. Defaults to `serve` (the dev mode the
+ * plugin targets by default); pass `'build'` to exercise the
+ * `runOnBuild` opt-in path.
+ */
+async function bootWithCommand(
+  plugin: ReturnType<typeof openapiGenerator>,
+  inputFile: string,
+  tmpRoot: string,
+  extraMs: number,
+  command: 'serve' | 'build',
+): Promise<() => Promise<void>> {
+  await getHook(plugin, 'configResolved').call(
+    {},
+    // Only the fields the plugin reads are populated; the real Vite
+    // ResolvedConfig is much larger.
+    { root: tmpRoot, command },
+  )
   await getHook(plugin, 'buildStart').call({})
   const baseTime = vi.getMockedSystemTime()?.getTime() ?? Date.now()
   vi.setSystemTime(baseTime + extraMs)
@@ -419,6 +440,20 @@ describe('openapiGenerator (vite plugin)', () => {
       expect(generateSpy).toHaveBeenCalledTimes(2)
     })
 
+    it('build skip also suppresses the URL cache-priming fetch', async () => {
+      // URL input: if we skip build entirely, we must not even fetch
+      // the upstream document during the build — a CI build with no
+      // network access would otherwise fail needlessly.
+      const url = 'http://example.com/openapi.json'
+      fetchSpy = installFetchMock(async () =>
+        makeResponse(JSON.stringify({ openapi: '3.0.0', paths: {} })),
+      )
+      const plugin = openapiGenerator({ input: url })
+      await bootWithCommand(plugin, url, tmpRoot, 0, 'build')
+      expect(fetchSpy).not.toHaveBeenCalled()
+      expect(generateSpy).not.toHaveBeenCalled()
+    })
+
     it('local file input does not touch fetch and behaves as before', async () => {
       // Spy on fetch to make sure file inputs never trigger a fetch.
       fetchSpy = installFetchMock(async () => makeResponse(''))
@@ -429,6 +464,40 @@ describe('openapiGenerator (vite plugin)', () => {
       await getHook(plugin, 'watchChange').call({}, inputFile)
 
       expect(fetchSpy).not.toHaveBeenCalled()
+      expect(generateSpy).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  /**
+   * `vite build` opt-in.
+   *
+   * The plugin's contract is "regenerate on dev"; `vite build` should
+   * consume the already-generated `src/api` directory. To keep the
+   * default safe, `buildStart` is a no-op during `build` unless
+   * `runOnBuild: true` is passed. These tests pin `config.command`
+   * to exercise the gate and the opt-in.
+   */
+  describe('runOnBuild gate', () => {
+    it('buildStart is a no-op during vite build by default', async () => {
+      const plugin = openapiGenerator({ input: inputFile })
+      await bootWithCommand(plugin, inputFile, tmpRoot, 0, 'build')
+      // No generate, no fetch, no nothing — `build` skips the plugin.
+      expect(generateSpy).not.toHaveBeenCalled()
+    })
+
+    it('runOnBuild: true opts back in to generation during vite build', async () => {
+      const plugin = openapiGenerator({
+        input: inputFile,
+        runOnBuild: true,
+      })
+      await bootWithCommand(plugin, inputFile, tmpRoot, 0, 'build')
+      expect(generateSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('serve (dev) still runs even when runOnBuild is false (the default)', async () => {
+      // The default value of `runOnBuild` must not affect `serve`.
+      const plugin = openapiGenerator({ input: inputFile })
+      await bootWithCommand(plugin, inputFile, tmpRoot, 0, 'serve')
       expect(generateSpy).toHaveBeenCalledTimes(1)
     })
   })
