@@ -15,8 +15,6 @@ export function printType(t: TsType): string {
           typeof l === 'string' ? `'${l.replace(/'/g, "\\'")}'` : String(l),
         )
         .join(' | ')
-    case 'ref':
-      return t.name
     case 'array':
       return `Array<${printType(t.item)}>`
     case 'union':
@@ -38,12 +36,7 @@ export function printObjectInline(t: TsType): string {
 }
 
 function isSimpleKind(kind: TsType['kind']): boolean {
-  return (
-    kind === 'primitive' ||
-    kind === 'literal' ||
-    kind === 'ref' ||
-    kind === 'literalUnion'
-  )
+  return kind === 'primitive' || kind === 'literal' || kind === 'literalUnion'
 }
 
 function isAllSimpleObject(t: Extract<TsType, { kind: 'object' }>): boolean {
@@ -73,9 +66,7 @@ export function printObjectMultiline(
   const parts = t.properties.map((p) => {
     const opt = p.optional ? '?' : ''
     const fieldType =
-      p.type.kind === 'union' ||
-      p.type.kind === 'object' ||
-      p.type.kind === 'array'
+      p.type.kind === 'union' || p.type.kind === 'object'
         ? printPropertyTypeMultiline(p.type, inner)
         : printType(p.type)
     return `${inner}${p.name}${opt}: ${fieldType}`

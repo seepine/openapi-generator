@@ -80,7 +80,7 @@ function tagSchema(
   if (isRef(schema)) {
     const ref = (schema as { $ref: string }).$ref
     if (!schemas) return undefined
-    const m = /^#\/(?:components|definitions)\/schemas\/([^/]+)$/.exec(ref)
+    const m = /^#\/(?:components\/schemas|definitions)\/([^/]+)$/.exec(ref)
     if (!m) return undefined
     const target = schemas[m[1]!]
     return target
@@ -196,10 +196,7 @@ function normalizeOperationV3(
     const media = pickMediaType(content)
     requestBody = {
       mediaType: media.mediaType,
-      schema:
-        media.schema !== undefined
-          ? tagSchema(media.schema, version, schemas)
-          : undefined,
+      schema: tagSchema(media.schema, version, schemas),
       required: rawBody.required === true,
     }
   }
@@ -275,10 +272,7 @@ function buildResponseFromCodeV3(
   return {
     status,
     mediaType: media.mediaType,
-    schema:
-      media.schema !== undefined
-        ? tagSchema(media.schema, version, schemas)
-        : undefined,
+    schema: tagSchema(media.schema, version, schemas),
   }
 }
 
@@ -427,25 +421,18 @@ function fillResponseStatusesV2(
 
   for (const code of RESPONSE_PRIORITY) {
     if (codes.includes(code)) {
-      const built = buildResponseFromCodeV2(code, responsesRaw[code], schemas)
-      if (built) return [built]
+      return [buildResponseFromCodeV2(code, responsesRaw[code], schemas)]
     }
   }
 
   for (const code of codes) {
     if (/^2\d{2}$/.test(code)) {
-      const built = buildResponseFromCodeV2(code, responsesRaw[code], schemas)
-      if (built) return [built]
+      return [buildResponseFromCodeV2(code, responsesRaw[code], schemas)]
     }
   }
 
   if (codes.includes('default')) {
-    const built = buildResponseFromCodeV2(
-      'default',
-      responsesRaw.default,
-      schemas,
-    )
-    if (built) return [built]
+    return [buildResponseFromCodeV2('default', responsesRaw.default, schemas)]
   }
 
   return [{ status: 'default', mediaType: undefined, schema: undefined }]
@@ -455,7 +442,7 @@ function buildResponseFromCodeV2(
   status: string,
   raw: unknown,
   schemas: Record<string, JsonSchema>,
-): NormalizedResponse | undefined {
+): NormalizedResponse {
   if (!isPlainObject(raw) || isRef(raw)) {
     return { status, mediaType: undefined, schema: undefined }
   }

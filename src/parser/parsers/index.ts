@@ -28,7 +28,6 @@ export function parseSchema(
   }
 
   const target = forward(schema)
-
   switch (target) {
     case 'const':
       return parseConst(ctx, schema)
@@ -53,11 +52,10 @@ export function parseSchema(
 
 function parseTypeArray(ctx: ParserContext, schema: JsonSchema): TsType {
   const typeArr = schema.type as unknown as string[]
-  const types = typeArr.filter((t) => t !== 'null')
   const includesNull = typeArr.includes('null')
-  const subs: TsType[] = types.map((t) =>
-    parseSchema(ctx, { ...schema, type: t } as JsonSchema),
-  )
+  const subs: TsType[] = typeArr
+    .filter((t) => t !== 'null')
+    .map((t) => parseSchema(ctx, { ...schema, type: t } as JsonSchema))
   if (subs.length === 0) return { kind: 'primitive', value: 'null' }
   const base: TsType =
     subs.length === 1 ? subs[0]! : { kind: 'union', types: subs }

@@ -37,12 +37,8 @@ export async function writeGenerated(
     await writeFile(tmp, content, 'utf-8')
     await rename(tmp, path)
   } catch (e) {
-    await reportAndThrow(path, e)
+    error(`failed to write ${path}: ${(e as Error).message}`)
+    throw e
   }
   return true
-}
-
-async function reportAndThrow(path: string, e: unknown): Promise<never> {
-  error(`failed to write ${path}: ${(e as Error).message}`)
-  throw e
 }

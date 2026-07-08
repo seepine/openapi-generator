@@ -10,7 +10,6 @@ export type TsType =
   | { kind: 'union'; types: TsType[] }
   | { kind: 'array'; item: TsType }
   | { kind: 'object'; properties: TsProperty[] }
-  | { kind: 'ref'; name: string }
   | { kind: 'literalUnion'; literals: (string | number)[] }
 
 export interface TsProperty {
