@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.4](/seepine/openapi-generator/compare/v0.1.3...v0.1.4) (2026-07-08)
+
+
+### 🎉 Features
+
+* **vite:** add runOnBuild option to skip generation during vite build ([cd28bb4](/seepine/openapi-generator/commit/cd28bb42137be4967774d4a1172687f628a688ff))
+
+
+### ♻️ Refactors
+
+* **parser:** drop ref type and inline extractRefName ([8d72122](/seepine/openapi-generator/commit/8d72122fb73ef7bbc6ac2b7fbc6c63c40dee938e))
+
 ## [0.1.3](/seepine/openapi-generator/compare/v0.1.2...v0.1.3) (2026-06-29)
 
 
