@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.5](/seepine/openapi-generator/compare/v0.1.4...v0.1.5) (2026-07-12)
+
+
+### 🐛 Bug Fixes
+
+* **vite:** run generation non-blocking and catch errors to avoid breaking build ([c0cc72f](/seepine/openapi-generator/commit/c0cc72f9e4aac16f74436efa715d144371ff7f26))
+
 ## [0.1.4](/seepine/openapi-generator/compare/v0.1.3...v0.1.4) (2026-07-08)
 
 
