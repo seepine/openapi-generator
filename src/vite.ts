@@ -3,6 +3,7 @@ import type { Plugin } from 'vite'
 import { generate, type GeneratorConfig } from './generate'
 import { fetchAsText } from './loader/readDocument'
 import { isUrl } from './utils/is'
+import { warn } from './utils/logger'
 
 /**
  * Options accepted by the Vite plugin.
@@ -93,15 +94,20 @@ export function openapiGenerator(opts: OpenapiGeneratorOptions): Plugin {
       if (command === 'build' && !runOnBuild) {
         return
       }
-      // Prime the URL cache unconditionally — the equality check needs
-      // something to compare against on the first watchChange.
-      if (isUrl(inputAbs!)) {
-        lastUrlContent = await fetchAsText(inputAbs!)
-      }
-      await runGenerate(outputDir!, inputAbs!, opts)
-      lastRunAt = Date.now()
-      // The initial buildStart run does not consume the debounce window,
-      // so we deliberately leave it eligible for the first watchChange.
+      runGenerate(outputDir!, inputAbs!, opts)
+        .then(async () => {
+          lastRunAt = Date.now()
+          if (isUrl(inputAbs!)) {
+            try {
+              lastUrlContent = await fetchAsText(inputAbs!)
+            } catch {}
+          }
+        })
+        .catch((e) => {
+          warn(
+            `openapi-generator: failed to generate API files: ${(e as Error).message}`,
+          )
+        })
     },
     async watchChange(id) {
       if (!watch) {
@@ -129,16 +135,21 @@ export function openapiGenerator(opts: OpenapiGeneratorOptions): Plugin {
       if (isUrl(inputAbs!)) {
         try {
           const fresh = await fetchAsText(inputAbs!)
-          if (fresh === lastUrlContent) return
+          if (fresh === lastUrlContent && lastUrlContent !== null) {
+            return
+          }
           lastUrlContent = fresh
-        } catch {
-          // A failed URL fetch is treated as "content may have changed"
-          // so runGenerate still runs and surfaces the network error
-          // through readDocument rather than silently swallowing it.
-        }
+        } catch {}
       }
-      await runGenerate(outputDir!, inputAbs!, opts)
-      lastRunAt = Date.now()
+      runGenerate(outputDir!, inputAbs!, opts)
+        .then(() => {
+          lastRunAt = Date.now()
+        })
+        .catch((e) => {
+          warn(
+            `openapi-generator: failed to generate API files: ${(e as Error).message}`,
+          )
+        })
     },
   }
 }
