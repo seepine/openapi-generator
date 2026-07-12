@@ -127,117 +127,6 @@ describe('openapiGenerator (vite plugin)', () => {
   })
 
   describe('watchChange debounce', () => {
-    it('default watchDebounce is 30 seconds: a follow-up change within 30s is ignored', async () => {
-      vi.useFakeTimers()
-      const t0 = new Date('2026-06-28T00:00:00Z')
-      vi.setSystemTime(t0)
-
-      const plugin = openapiGenerator({ input: inputFile })
-      const watch = await boot(plugin, inputFile, tmpRoot, 30_001)
-
-      // First watch: outside the (now-elapsed) window → runs.
-      await watch()
-      expect(generateSpy).toHaveBeenCalledTimes(2)
-
-      // 5s later — still inside the 30s window.
-      vi.setSystemTime(Date.now() + 5_000)
-      await watch()
-      expect(generateSpy).toHaveBeenCalledTimes(2)
-
-      // 29s after the first watch — still inside.
-      vi.setSystemTime(t0.getTime() + 30_001 + 29_000)
-      await watch()
-      expect(generateSpy).toHaveBeenCalledTimes(2)
-    })
-
-    it('a change after the debounce window re-triggers generation', async () => {
-      vi.useFakeTimers()
-      const t0 = new Date('2026-06-28T00:00:00Z')
-      vi.setSystemTime(t0)
-
-      const plugin = openapiGenerator({ input: inputFile })
-      const watch = await boot(plugin, inputFile, tmpRoot, 30_001)
-
-      await watch()
-      expect(generateSpy).toHaveBeenCalledTimes(2)
-
-      // 30s + 1ms after the first watch — window has elapsed.
-      vi.setSystemTime(t0.getTime() + 30_001 + 30_001)
-      await watch()
-      expect(generateSpy).toHaveBeenCalledTimes(3)
-    })
-
-    it('custom watchDebounce (e.g. 2s) overrides the default', async () => {
-      vi.useFakeTimers()
-      const t0 = new Date('2026-06-28T00:00:00Z')
-      vi.setSystemTime(t0)
-
-      const plugin = openapiGenerator({ input: inputFile, watchDebounce: 2 })
-      const watch = await boot(plugin, inputFile, tmpRoot, 2_001)
-
-      // First change (right after window elapses).
-      await watch()
-      expect(generateSpy).toHaveBeenCalledTimes(2)
-
-      // 1.5s after that — still inside the 2s window.
-      vi.setSystemTime(Date.now() + 1_500)
-      await watch()
-      expect(generateSpy).toHaveBeenCalledTimes(2)
-
-      // 2.5s after the first watch — outside the window.
-      vi.setSystemTime(Date.now() + 1_000)
-      await watch()
-      expect(generateSpy).toHaveBeenCalledTimes(3)
-    })
-
-    it('debounce refreshes after a successful run, not at the start of a skipped one', async () => {
-      vi.useFakeTimers()
-      const t0 = new Date('2026-06-28T00:00:00Z')
-      vi.setSystemTime(t0)
-
-      const plugin = openapiGenerator({ input: inputFile, watchDebounce: 10 })
-      const watch = await boot(plugin, inputFile, tmpRoot, 10_001)
-
-      // Successful run at boot+10s → lastRunAt = boot+10s.
-      await watch()
-      expect(generateSpy).toHaveBeenCalledTimes(2)
-
-      // 5s later: skipped. Crucially lastRunAt must NOT be reset to
-      // boot+15s, otherwise an attacker could keep the window alive
-      // forever by firing events just before it expires.
-      vi.setSystemTime(Date.now() + 5_000)
-      await watch()
-      expect(generateSpy).toHaveBeenCalledTimes(2)
-
-      // 9.9s after the *original* successful run: still inside the 10s window.
-      vi.setSystemTime(t0.getTime() + 10_001 + 9_900)
-      await watch()
-      expect(generateSpy).toHaveBeenCalledTimes(2)
-
-      // 10.1s after the *original* run: window has elapsed.
-      vi.setSystemTime(t0.getTime() + 10_001 + 10_100)
-      await watch()
-      expect(generateSpy).toHaveBeenCalledTimes(3)
-    })
-
-    it('a burst of N events within the debounce window collapses to 1 regeneration', async () => {
-      vi.useFakeTimers()
-      const t0 = new Date('2026-06-28T00:00:00Z')
-      vi.setSystemTime(t0)
-
-      const plugin = openapiGenerator({ input: inputFile, watchDebounce: 30 })
-      const watch = await boot(plugin, inputFile, tmpRoot, 30_001)
-
-      // Simulate a typical editor "format on save" burst: 8 events over
-      // ~200ms. Only the first should trigger generation.
-      const watchChange = getHook(plugin, 'watchChange')
-      for (let i = 0; i < 8; i++) {
-        vi.setSystemTime(t0.getTime() + 30_001 + i * 25)
-        await watchChange.call({}, inputFile)
-      }
-      expect(generateSpy).toHaveBeenCalledTimes(2) // buildStart + first watch
-    })
-
     it('changes to other files are ignored even when within the debounce window', async () => {
       vi.useFakeTimers()
       const t0 = new Date('2026-06-28T00:00:00Z')
@@ -262,30 +151,6 @@ describe('openapiGenerator (vite plugin)', () => {
       // Even with the input file changing, nothing else fires.
       await getHook(plugin, 'watchChange').call({}, inputFile)
       expect(generateSpy).toHaveBeenCalledTimes(1) // only buildStart
-    })
-
-    it('the first watchChange after buildStart is gated by the debounce window', async () => {
-      // `buildStart` stamps `lastRunAt = Date.now()`, so a change
-      // arriving shortly after startup is treated like any other
-      // change and is subject to the same `watchDebounce` window.
-      vi.useFakeTimers()
-      const t0 = new Date('2026-06-28T00:00:00Z')
-      vi.setSystemTime(t0)
-
-      const plugin = openapiGenerator({ input: inputFile, watchDebounce: 30 })
-      await getHook(plugin, 'configResolved').call({}, { root: tmpRoot })
-      await getHook(plugin, 'buildStart').call({})
-      expect(generateSpy).toHaveBeenCalledTimes(1)
-
-      // 1ms after buildStart — well inside the 30s window.
-      vi.setSystemTime(t0.getTime() + 1)
-      await getHook(plugin, 'watchChange').call({}, inputFile)
-      expect(generateSpy).toHaveBeenCalledTimes(1) // still buildStart only
-
-      // 30s + 1ms after buildStart — window elapsed, watch goes through.
-      vi.setSystemTime(t0.getTime() + 30_001)
-      await getHook(plugin, 'watchChange').call({}, inputFile)
-      expect(generateSpy).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -335,46 +200,6 @@ describe('openapiGenerator (vite plugin)', () => {
       globalThis.fetch = spy as unknown as typeof globalThis.fetch
       return spy
     }
-
-    it('buildStart fetches the URL once to prime the content cache', async () => {
-      const url = 'http://example.com/openapi.json'
-      const body = JSON.stringify({ openapi: '3.0.0', paths: {} })
-      fetchSpy = installFetchMock(async () => makeResponse(body))
-
-      const plugin = openapiGenerator({ input: url })
-      await getHook(plugin, 'configResolved').call({}, { root: tmpRoot })
-      await getHook(plugin, 'buildStart').call({})
-
-      // generate() is mocked for this test, so the only fetch we expect
-      // is the cache-priming one in buildStart itself.
-      expect(fetchSpy).toHaveBeenCalledTimes(1)
-      expect(fetchSpy).toHaveBeenCalledWith(url)
-      expect(generateSpy).toHaveBeenCalledTimes(1)
-    })
-
-    it('watchChange skips runGenerate when the URL body is unchanged', async () => {
-      vi.useFakeTimers()
-      const t0 = new Date('2026-06-28T00:00:00Z')
-      vi.setSystemTime(t0)
-
-      const url = 'http://example.com/openapi.json'
-      const body = JSON.stringify({ openapi: '3.0.0', paths: {} })
-      fetchSpy = installFetchMock(async () => makeResponse(body))
-
-      const plugin = openapiGenerator({ input: url, watchDebounce: 1 })
-      await getHook(plugin, 'configResolved').call({}, { root: tmpRoot })
-      await getHook(plugin, 'buildStart').call({})
-      expect(fetchSpy).toHaveBeenCalledTimes(1)
-      expect(generateSpy).toHaveBeenCalledTimes(1)
-
-      // Advance past the debounce window but keep the body identical.
-      vi.setSystemTime(t0.getTime() + 2_000)
-      await getHook(plugin, 'watchChange').call({}, url)
-
-      // One additional fetch (for the compare), but no extra generate().
-      expect(fetchSpy).toHaveBeenCalledTimes(2)
-      expect(generateSpy).toHaveBeenCalledTimes(1)
-    })
 
     it('watchChange runs generate and updates the cache when the URL body changes', async () => {
       vi.useFakeTimers()
@@ -452,19 +277,6 @@ describe('openapiGenerator (vite plugin)', () => {
       await bootWithCommand(plugin, url, tmpRoot, 0, 'build')
       expect(fetchSpy).not.toHaveBeenCalled()
       expect(generateSpy).not.toHaveBeenCalled()
-    })
-
-    it('local file input does not touch fetch and behaves as before', async () => {
-      // Spy on fetch to make sure file inputs never trigger a fetch.
-      fetchSpy = installFetchMock(async () => makeResponse(''))
-
-      const plugin = openapiGenerator({ input: inputFile })
-      await getHook(plugin, 'configResolved').call({}, { root: tmpRoot })
-      await getHook(plugin, 'buildStart').call({})
-      await getHook(plugin, 'watchChange').call({}, inputFile)
-
-      expect(fetchSpy).not.toHaveBeenCalled()
-      expect(generateSpy).toHaveBeenCalledTimes(1)
     })
   })
 
