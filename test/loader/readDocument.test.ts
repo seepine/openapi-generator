@@ -146,8 +146,10 @@ describe('readDocument — file input (unchanged behavior)', () => {
   })
 
   it('throws when local file is not valid JSON', async () => {
-    // /proc/version on linux is a plain text file, not JSON
-    await expect(readDocument('/proc/version')).rejects.toThrow(
+    // AGENTS.md is a real, readable, non-JSON file in the repo. Using it
+    // keeps the test deterministic across platforms, unlike /proc/version
+    // which only exists on Linux.
+    await expect(readDocument(`${REPO_ROOT}/AGENTS.md`)).rejects.toThrow(
       /Failed to parse OpenAPI document/,
     )
   })
